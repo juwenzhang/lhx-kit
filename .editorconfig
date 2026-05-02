@@ -1,0 +1,38 @@
+# EditorConfig is awesome: https://EditorConfig.org
+# 统一跨编辑器的基础格式约定。覆盖：VSCode / JetBrains / Vim / Sublime / ...
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 120
+
+# TS / JS / JSX / TSX / JSON / CSS / HTML 统一 2 空格
+[*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,css,scss,less,html,vue,md,mdx,yaml,yml}]
+indent_style = space
+indent_size = 2
+
+# Python / Shell 按各自惯例
+[*.py]
+indent_size = 4
+
+[*.{sh,bash,zsh}]
+indent_size = 2
+
+# Makefile 必须 tab（硬性要求）
+[Makefile]
+indent_style = tab
+
+# Go
+[*.go]
+indent_style = tab
+
+# Markdown 允许结尾空格（两空格 = 软换行）
+[*.{md,mdx}]
+trim_trailing_whitespace = false
+max_line_length = off

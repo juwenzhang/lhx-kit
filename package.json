@@ -1,0 +1,74 @@
+{
+  "name": "lhx-kit",
+  "version": "0.0.1",
+  "private": true,
+  "description": "lhx-kit: a CLI that scaffolds complex, production-ready project templates, with a focused runtime, renderer, and offline pipeline.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "keywords": ["mpa", "vite", "cli", "scaffold", "monorepo", "react", "vue3", "offline", "hybrid", "cdn"],
+  "scripts": {
+    "bootstrap": "pnpm install",
+    "postinstall": "husky",
+    "setup": "pnpm install && pnpm -r --if-present build",
+    "build": "pnpm -r --if-present build",
+    "build:packages": "pnpm --filter './packages/*' --if-present build",
+    "build:examples": "pnpm --filter './examples/*' --if-present build",
+    "watch": "pnpm --filter './packages/*' --parallel --if-present dev",
+    "clean": "pnpm -r --if-present clean",
+    "reset": "pnpm run clean && find . -type d -name node_modules -prune -exec rm -rf {} +",
+    "dev:vmpa": "pnpm --filter vmpa dev",
+    "dev:rmpa": "pnpm --filter rmpa dev",
+    "docs:dev": "pnpm --filter @lhx-kit/docs dev",
+    "docs:build": "pnpm --filter @lhx-kit/docs build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm -r --if-present --parallel typecheck",
+    "test": "pnpm -r --if-present test",
+    "smoke": "pnpm --filter @lhx-kit/cli smoke",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "commitlint": "commitlint --edit",
+    "icons:gen": "node scripts/gen-icons.mjs --out apps/docs/docs/public --user juwenzhang",
+    "changeset": "changeset",
+    "changeset:add": "changeset add",
+    "changeset:status": "changeset status --verbose",
+    "version": "changeset version && pnpm install --lockfile-only",
+    "release": "pnpm -r --filter './packages/*' build && changeset publish",
+    "release:dry": "pnpm -r --if-present publish --dry-run --access public",
+    "release:snapshot": "changeset version --snapshot canary && changeset publish --tag canary --no-git-tag"
+  },
+  "engines": {
+    "node": ">=18.18.0",
+    "pnpm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.31.0",
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": ["@algolia/client-search", "react", "react-dom", "vue", "@types/react", "@types/react-dom"],
+      "allowedVersions": {
+        "vite": "^5.0.0 || ^6.0.0 || ^7.0.0"
+      }
+    },
+    "patchedDependencies": {}
+  }
+}
