@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+# 推送前：跑 typecheck，防止 CI 红灯浪费时间。
+# 耗时：约 10–30s（所有包串行 tsc --noEmit）。
+# 嫌慢：可以改成只对 changed 包跑 typecheck。
+#
+# 逃生舱：
+#   git push --no-verify   （应急使用）
+
+echo "🔍 pre-push: running typecheck across all workspaces..."
+pnpm -r --if-present --parallel typecheck

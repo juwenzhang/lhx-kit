@@ -1,0 +1,121 @@
+{
+  // ──────────────────────────────────────────────────────
+  //  编辑器
+  // ──────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.codeActionsOnSave": {
+    "quickfix.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [120],
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.stickyScroll.enabled": true,
+
+  // ──────────────────────────────────────────────────────
+  //  TypeScript
+  // ──────────────────────────────────────────────────────
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.importModuleSpecifierEnding": "minimal",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.inlayHints.parameterNames.enabled": "literals",
+  "typescript.inlayHints.propertyDeclarationTypes.enabled": false,
+  "typescript.inlayHints.variableTypes.enabled": false,
+  "typescript.format.enable": false,
+  "javascript.format.enable": false,
+
+  // ──────────────────────────────────────────────────────
+  //  Biome（覆盖默认 prettier/eslint 行为）
+  // ──────────────────────────────────────────────────────
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+
+  // ──────────────────────────────────────────────────────
+  //  Files
+  // ──────────────────────────────────────────────────────
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/node_modules": false,
+    "**/.git": true,
+    "**/dist": false,
+    "**/doc_build": true,
+    "**/.lhx-kit": true,
+    "**/coverage": true,
+    "**/*.tsbuildinfo": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/dist-offline": true,
+    "**/doc_build": true,
+    "**/.lhx-kit": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.codebuddy": true,
+    "**/coverage": true
+  },
+  "files.associations": {
+    // 模板文件"按内容类型"关联：模板引擎 <%= key %> 只替换字面量，
+    // 不需要语法校验。把它们全部标记成 plaintext，避免 tsserver 误把
+    // package.json.template / README.md.template 当成 TS 文件报一堆红错。
+    "*.template": "plaintext",
+    ".editorconfig": "properties",
+    ".npmrc": "properties"
+  },
+
+  // ──────────────────────────────────────────────────────
+  //  Git
+  // ──────────────────────────────────────────────────────
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": false,
+  "git.inputValidation": "always",
+  "git.inputValidationLength": 100,
+  "git.inputValidationSubjectLength": 72,
+
+  // ──────────────────────────────────────────────────────
+  //  杂项
+  // ──────────────────────────────────────────────────────
+  "npm.packageManager": "pnpm",
+  // 文件嵌套（package.json 下折叠 biome.json / tsconfig.json 等）
+  //   true  = 折叠（省地方，但要多点一次 > 才能看到相关配置）
+  //   false = 平铺（所有文件一眼看到）
+  // 改这里后**关闭 VSCode 重开窗口**才会立刻生效（或 Cmd+Shift+P → "Developer: Reload Window"）
+  "explorer.fileNesting.enabled": false,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": ".npmrc, .nvmrc, .node-version, pnpm-*.yaml, pnpm-*.json, .eslintrc*, eslint.config.*, .prettierrc*, prettier.config.*, biome.json, commitlint.config.*, lint-staged.config.*, stylelint.config.*, tsconfig*.json, vitest.config.*, playwright.config.*, vite.config.*, tsup.config.*, Makefile, LICENSE*, CHANGELOG*",
+    "README.md": "CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, SUPPORT.md, GOVERNANCE.md, AUTHORS*"
+  },
+
+  // ──────────────────────────────────────────────────────
+  //  PowerShell / Shell
+  // ──────────────────────────────────────────────────────
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.scrollback": 10000
+}

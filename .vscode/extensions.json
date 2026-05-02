@@ -1,0 +1,34 @@
+{
+  // 打开工作区时 VSCode 会提示安装这些扩展
+  "recommendations": [
+    // 核心 lint + format
+    "biomejs.biome",
+    "editorconfig.editorconfig",
+
+    // 语言支持
+    "vue.volar",
+    "dbaeumer.vscode-eslint",
+    "astro-build.astro-vscode",
+    "unifiedjs.vscode-mdx",
+    "bradlc.vscode-tailwindcss",
+
+    // Git
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+
+    // 工程化
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode.makefile-tools",
+
+    // 可选：调试体验
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker"
+  ],
+  "unwantedRecommendations": [
+    // Biome 替代了 Prettier + ESLint，不要同时装避免冲突
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}

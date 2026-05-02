@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# 提交消息必须符合 Conventional Commits 规范。
+# 规则定义：commitlint.config.cjs
+
+pnpm exec commitlint --edit "$1"

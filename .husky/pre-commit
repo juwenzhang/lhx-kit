@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# 提交前：对 staged 文件跑 format + lint。
+# 失败时退出码非零，git commit 会被阻断。
+#
+# 逃生舱：
+#   git commit --no-verify   （应急使用；正常 PR 不应走此路径）
+
+pnpm exec lint-staged
