@@ -33,6 +33,16 @@ GitHub Actions 怎么配才既快又准：
 - **bin shim 重建坑**：为什么 `pnpm install --offline` 在 pnpm 9 下会导致 `lhx-cli: command not found`
 - **husky pre-push + biome**：本地兜底，不让 CI 白花钱
 
+### [🤖 GitHub AI 自动流（零成本）](./ai-automation)
+
+用 GitHub Models 给仓库接三条 AI 自动线——不花钱、不用 API key、10 分钟上线：
+
+- **新 issue 自动分类 + 打标签 + 欢迎评论**（语言自适应）
+- **评论 `@ai-bot ...` 触发上下文感知问答**（读 README + issue 上下文）
+- **打 `ai-summary` 标签做长讨论 TL;DR**（自动替换旧总结）
+- 防死循环 / 防滥用 / 透明性签名的具体实践
+- 升级路径：从轻量 → 自动 review → 真改代码（Claude Code Action / Copilot Coding Agent）
+
 ### [📝 Commit / PR 规范（规划中）](#)
 
 - Conventional Commits 的真实价值：不是好看，而是让 changesets / semantic-release 能机读

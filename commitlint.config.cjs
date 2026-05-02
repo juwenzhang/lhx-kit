@@ -60,6 +60,7 @@ module.exports = {
         'rmpa',
         'deps',
         'ci',
+        'ai',
         'release',
         'repo'
       ]

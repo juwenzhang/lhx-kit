@@ -126,7 +126,8 @@ export default defineConfig({
           items: [
             {text: '专栏总览', link: '/engineering/overview'},
             {text: '🚀 发布流水线：Changesets + Trusted Publishing', link: '/engineering/release-pipeline'},
-            {text: '⚙️ CI 策略：paths / 跨平台 / frozen / pre-push', link: '/engineering/ci-strategy'}
+            {text: '⚙️ CI 策略：paths / 跨平台 / frozen / pre-push', link: '/engineering/ci-strategy'},
+            {text: '🤖 GitHub AI 自动流（零成本）', link: '/engineering/ai-automation'}
           ]
         }
       ],
