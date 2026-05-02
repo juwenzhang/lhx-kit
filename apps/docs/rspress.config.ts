@@ -95,7 +95,8 @@ export default defineConfig({
           collapsed: false,
           items: [
             {text: 'Runtime 概览', link: '/runtime/overview'},
-            {text: 'Vite 插件实现详解', link: '/runtime/vite-plugin'}
+            {text: 'Vite 插件实现详解', link: '/runtime/vite-plugin'},
+            {text: 'Rolldown 迁移记（Vite 8）', link: '/runtime/rolldown-migration'}
           ]
         }
       ],
@@ -110,7 +111,11 @@ export default defineConfig({
         {
           text: '📦 Offline',
           collapsed: false,
-          items: [{text: '离线打包', link: '/offline/overview'}]
+          items: [
+            {text: '离线打包', link: '/offline/overview'},
+            {text: '打包深度剖析：压缩库 / 哈希 / 算法', link: '/offline/packaging-deep-dive'},
+            {text: '升级评估：要不要做？做哪些？', link: '/offline/upgrade-assessment'}
+          ]
         }
       ],
       '/templates/': [

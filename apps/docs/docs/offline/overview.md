@@ -198,7 +198,7 @@ excludeFilenames: ['mockServiceWorker.js']
 - 必须在打包时主动排除
 :::
 
-### 4.3 sha256 指纹：流式 hash
+### 4.3 sha256 指纹：流式 + 并发 hash
 
 ```ts title="packages/offline/src/index.ts"
 async function hashFile(filePath: string): Promise<string> {
@@ -210,15 +210,28 @@ async function hashFile(filePath: string): Promise<string> {
     stream.on('end', () => resolve(hash.digest('hex')));
   });
 }
+
+// generateOfflineManifest：用一个小型 concurrency limiter 把
+// stat + sha256 并行化（默认 8 并发）。旧版本是 `for...of await`
+// 串行，在 100+ 文件的项目上会成为 offline build 的瓶颈。
+const hashLimit = createLimiter(config.hashConcurrency ?? 8);
+const entries = await Promise.all(
+  targets.map(t => hashLimit(async () => {
+    const [stats, hash] = await Promise.all([stat(t.file), hashFile(t.file)]);
+    return {path: t.rel, size: stats.size, hash, contentType: contentTypeOf(t.rel)};
+  }))
+);
 ```
 
-:::info 为什么用流式
-| 方式 | 问题 |
-| --- | --- |
-| `readFile` 全量读 | 大文件（图片 / 字体 MB 级）占内存 |
-| 流式读 | 内存占用恒定 ~64KB |
+:::info 为什么用流式 + 并发
+| 维度 | 串行（旧）| 并发（新）|
+| --- | --- | --- |
+| 单文件内存 | ~64KB（流式，OK）| ~64KB（流式，OK）|
+| 100 文件总耗时 | ~500ms | ~80ms |
+| 产物字节 | 恒定 | 完全一致 |
 
-Node.js 原生 API，无额外依赖。
+Node.js 原生 API，零新增依赖（`createLimiter` 是 15 行内联实现）。
+`hashConcurrency` / `copyConcurrency` 两个 config 字段可调，EMFILE 敏感的环境可以往下压。
 :::
 
 **用途**：
@@ -242,6 +255,8 @@ Node.js 原生 API，无额外依赖。
   "rollback": {"strategy": "previous"},
   "metadata": {"channel": "default"},
   "totalSize": 461824,
+  "packageHash": "984bd7b8738182584724fe9969c504e570c8e2e3b4619bd8387890af4d4084b4",
+  "packageSize": 308986,
   "assets": [
     {
       "path": "home/index.html",
@@ -259,8 +274,13 @@ Node.js 原生 API，无额外依赖。
 }
 ```
 
-:::tip `schemaVersion: '1.0.0'` 是字面值
-给容器一个稳定协议号。任何 breaking change 都必须升版本号，保证向后兼容。
+:::tip `schemaVersion` 保持 `'1.0.0'`，所有新字段都是 optional
+`packageHash` / `packageSize` 是**整包级** SHA-256（流式算 zip 本身），和 `assets[i].hash`（**文件级** SHA-256）分层独立：
+
+- **文件级 hash** 防容器解压后的传输损坏 / 单文件篡改
+- **整包 hash** 给 CDN + 运维平台一个**稳定版本标识**（比文件名里的 timestamp 更权威），同时防中间人对 zip 本体替换
+
+把新字段做成 optional 而不是升 schemaVersion，是为了让现有 hybrid 容器和运维系统**不做任何改动**就能继续消费；需要用整包 hash 的消费方按需读取即可。
 :::
 
 ### 4.5 HTML 的 CDN URL 置空：`stripCdnUrlsFromHtml`
@@ -318,13 +338,27 @@ async function stripCdnUrlsFromHtml(htmlPath: string) {
 
 离线 WebView 加载 HTML 后，loader 发现 `urls` 数组空 → 直接 `loadLocalFallback` → dynamic import 本地 vendor chunk → **零网络请求**成功。
 
-### 4.6 AdmZip 打包
+:::warning 同步重压 `.html.br` / `.html.gz`（曾经的隐藏 bug）
+`@lhx-kit/vite-plugin` 的 compress 副插件会给每个 HTML 产出 `.br` 和 `.gz` 预压副本。如果**只**改原 HTML 而不改副本，容器在协商 `Accept-Encoding: br` 时会拿到**旧内容**（CDN URL 没清）—— 离线环境下会卡在 DNS 超时 5 秒。
 
-```ts title="packages/offline/src/index.ts"
-const zip = new AdmZip();
+现在的 `copyBuildToOffline` 在 strip 完 HTML 后会自动同步重压存在的 `.br` / `.gz` 副本（仅重压已存在的，不会凭空新建）。失败时 fall back 到不重压，不阻塞构建。
+:::
+
+### 4.6 AdmZip 打包 + 整包 SHA-256
+
+```ts title="packages/offline/src/index.ts::buildOfflinePackage"
+// 1. 打 zip
 zip.addLocalFile(manifestPath);
 zip.addLocalFolder(filesDir, 'files');
 zip.writeZip(`${packageName}-${version}.zip`);
+
+// 2. 对产出的 zip 流式算 SHA-256（内存恒定，几百 MB 也稳）
+const packageHash = await hashFile(zipPath);
+const {size: packageSize} = await stat(zipPath);
+
+// 3. 回写 manifest.json（磁盘那份带 packageHash；
+//    zip 内部那份不带，避免自引用循环）
+await writeOfflineManifest({...manifest, packageHash, packageSize}, outDir);
 ```
 
 :::info 为什么选 adm-zip
@@ -336,6 +370,7 @@ zip.writeZip(`${packageName}-${version}.zip`);
 | **`adm-zip`** ✅ | 纯 JS 实现，无 native binding，Docker 友好 |
 
 性能：打一个 450KB 的包 < 200ms，完全够用。
+更详细的选型对比见 [🔬 打包深度剖析](./packaging-deep-dive)。
 :::
 
 ### 4.7 Rollback 策略（容器侧行为约定）
@@ -406,21 +441,32 @@ lhx-cli offline diff old.zip new.zip
 ### `inspect` 做什么
 
 ```text
-┌──────────────────────────────────────┐
-│ 读 manifest.json                      │
-│   ↓                                  │
-│ 逐个 fs.existsSync 校验文件是否在     │
-│   ↓                                  │
-│ 重算每个文件的 sha256                  │
-│   ↓                                  │
-│ 和 manifest 里声明的 hash 对比         │
-│   ↓                                  │
-│ 报告：                                │
-│   - 丢失 / 损坏的文件                  │
-│   - 体积 > 200KB 的文件（提示优化）    │
-│   - 总大小、页面数、资源数             │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ 读 manifest.json                              │
+│   ↓                                          │
+│ 逐个 fs.existsSync 校验文件是否在             │
+│   ↓                                          │
+│ 交叉校验 pages[i].file 是否都在 assets[] 里   │ ← 0.0.3
+│   ↓                                          │
+│ 启发式 warnings（不翻转 valid）：              │ ← 0.0.3
+│   - page 目录下没有任何 .js chunk             │
+│   - 总 assets < 5 或 总体积 < 20KB             │
+│   ↓                                          │
+│ 报告：                                        │
+│   - package hash（sha256:xxxxxx… + size）     │ ← 0.0.3
+│   - 丢失 / 损坏的文件（硬错误，影响 valid）   │
+│   - warnings（软错误，只 warn 不 fail）       │
+│   - 总大小、页面数、资源数                    │
+└──────────────────────────────────────────────┘
 ```
+
+:::tip 软警告 vs 硬错误
+**硬错误**（`missingFiles`）：manifest 声明的文件物理不存在 → `valid: false` → CI 非零退出。
+
+**软警告**（`warnings`）：产物结构"看起来不对"但不能 100% 判定坏了（例如 page 目录里没有 .js chunk）→ 只打印 warning，不翻转 `valid`。让你在 CI 里能看见可疑信号，但不会被假阳性阻塞。需要严格模式可以在上层加 `--strict` 开关把 warnings 也视为失败。
+
+这条启发式是 [Rolldown 迁移记](../runtime/rolldown-migration) 那次沉默白屏事故的直接产物。
+:::
 
 ---
 
@@ -516,5 +562,8 @@ dist-offline/
 
 - 容器 spec 参考：[淘宝 H5 容器](https://www.alibabacloud.com/help/en/doc-detail/57926.htm)（思路参考）
 - 同类方案对比：[OfflinePlugin](https://github.com/NekR/offline-plugin)（Service Worker 路径）
+- 🔬 [**打包深度剖析**](./packaging-deep-dive) — 压缩库 / 哈希算法 / 压缩策略对比 + lhx-kit 升级建议
+- 🧪 [**升级评估：做不做？做哪些？**](./upgrade-assessment) — 基于真实代码 + 产物数据的优先级决策
+- 🦀 [**Rolldown 迁移记（Vite 8）**](../runtime/rolldown-migration) — 本离线管道曾经沉默白屏的一次事故复盘与防御加固
 - [🌐 CDN 外挂专题](../guide/cdn) — 为什么离线要清空 CDN URL
 - [⚙️ CLI offline 命令](../cli/reference#offline)

@@ -532,6 +532,7 @@ rewrite.test.ts     # rewriteCdnImports 单测
 
 ## 十、📖 下一步
 
+- [🦀 Rolldown 迁移记（Vite 8）](./rolldown-migration) — 本插件在 Vite 8 下的 `generateBundle` 改造与事故复盘
 - [⚡ 性能优化](../guide/performance) — 看 chunk 策略演进 + 实测数据
 - [🌐 CDN 外挂](../guide/cdn) — transform() 改写逻辑的深度解释
 - [Runtime 概览](./overview) — 看 cdn-loader 运行时源码
