@@ -34,3 +34,6 @@ interface ImportMeta {
 declare interface Window {
   LhxCdn?: import('@lhx-kit/runtime/cdn-loader').LhxCdnApi;
 }
+
+// Declare 3rd-party modules that ship without type defs
+declare module 'postcss-pxtorem';

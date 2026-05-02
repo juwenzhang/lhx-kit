@@ -2,7 +2,13 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@lhx-kit/tsconfig/app-react.json",
   "compilerOptions": {
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@pages/*": ["src/pages/*"],
+      "@components/*": ["src/components/*"]
+    }
   },
   "include": [
     "src/**/*.ts",
