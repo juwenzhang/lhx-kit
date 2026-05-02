@@ -51,14 +51,14 @@
   "dependencies": {
     "@lhx-kit/config": "workspace:*",
     "@lhx-kit/offline": "workspace:*",
-    "cac": "^6.7.14",
+    "cac": "^7.0.0",
     "execa": "^9.6.0",
     "fs-extra": "^11.2.0",
-    "giget": "^1.2.5",
+    "giget": "^3.2.0",
     "jiti": "^2.4.2",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2",
-    "ts-morph": "^24.0.0"
+    "ts-morph": "^28.0.0"
   },
   "peerDependencies": {
     "@lhx-kit/skills": "workspace:*"
@@ -72,10 +72,10 @@
     "@lhx-kit/skills": "workspace:*",
     "@lhx-kit/tsconfig": "workspace:*",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.11.0",
+    "@types/node": "^25.6.0",
     "@types/prompts": "^2.4.9",
     "tsup": "^8.3.5",
-    "typescript": "^5.4.0"
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=18.18.0"
