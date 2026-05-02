@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/offline",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Offline packaging pipeline: whitelist filter, sha256 manifest, AdmZip packer, HTML CDN URL strip, and inspect tools.",
   "keywords": ["lhx-kit", "offline", "hybrid", "webview", "manifest", "zip", "prefetch"],
