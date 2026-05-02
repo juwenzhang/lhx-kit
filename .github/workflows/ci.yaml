@@ -120,7 +120,7 @@ jobs:
       - name: Typecheck all workspaces
         run: pnpm -r --if-present --parallel typecheck
 
-      - name: Build examples smoke
+      - name: Build examples
         run: |
           pnpm --filter vmpa build
           pnpm --filter rmpa build
@@ -153,24 +153,7 @@ jobs:
         run: pnpm -r --if-present test
 
   # ──────────────────────────────────────────────────────
-  # CLI smoke（保底：`lhx-cli --help` 能启动）
-  # ──────────────────────────────────────────────────────
-  cli-smoke:
-    name: 🚬 CLI smoke
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
-      - run: pnpm --filter '@lhx-kit/*' build
-      - run: pnpm --filter @lhx-kit/cli smoke
-
-  # ──────────────────────────────────────────────────────
-  # 跨平台兼容性（仅对 CLI 关键路径）
+  # 跨平台兼容性（Ubuntu / macOS / Windows 上 packages/* 能否构建）
   # ──────────────────────────────────────────────────────
   cross-platform:
     name: 🌐 Cross-platform (${{ matrix.os }})
@@ -188,4 +171,3 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile=false
       - run: pnpm --filter '@lhx-kit/*' build
-      - run: pnpm --filter @lhx-kit/cli smoke

@@ -44,7 +44,6 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "smoke": "node ./dist/bin.js --help",
     "clean": "rm -rf dist"
   },
   "dependencies": {

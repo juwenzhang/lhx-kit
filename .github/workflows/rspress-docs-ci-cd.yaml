@@ -44,13 +44,13 @@ jobs:
           cache: pnpm
 
       - name: Setup Pages
+        # Pages MUST already be enabled with "Source: GitHub Actions"
+        # under Settings → Pages. The `enablement: true` input cannot
+        # be used here: it requires a PAT with `administration:write`,
+        # and the default GITHUB_TOKEN doesn't have that permission.
+        # If this step fails with 'Get Pages site failed', the fix is
+        # to switch the source to "GitHub Actions" in the UI once.
         uses: actions/configure-pages@v5
-        with:
-          # Auto-enable Pages + switch source to "GitHub Actions" if it
-          # wasn't configured yet. Requires the workflow to have write
-          # access (see top-level `permissions: pages: write`), which
-          # Settings → Actions → General must also allow.
-          enablement: true
 
       - name: Install
         run: pnpm install --frozen-lockfile=false
