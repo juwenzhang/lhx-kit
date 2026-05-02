@@ -1,0 +1,73 @@
+{
+  "name": "@lhx-kit/skills",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Agent-agnostic skill pack for lhx-kit projects. Ships curated Markdown knowledge modules (add page / configure CDN / mobile adaptation / offline packaging / renderer schema / troubleshooting) that can be installed into any AI coding assistant via adapters (CodeBuddy / Cursor / Claude Code / plain Markdown).",
+  "keywords": [
+    "lhx-kit",
+    "skills",
+    "ai-agent",
+    "ai-coding",
+    "cursor-rules",
+    "codebuddy",
+    "claude-code",
+    "prompt-engineering",
+    "knowledge-base"
+  ],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/skills"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./skills/*": "./skills/*"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@lhx-kit/tsconfig": "workspace:*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

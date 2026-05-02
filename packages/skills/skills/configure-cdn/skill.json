@@ -1,0 +1,14 @@
+{
+  "name": "configure-cdn",
+  "title": "Configure CDN Externals",
+  "description": "Move heavy vendor dependencies to a CDN with automatic fallback. Covers cdn.entries structure, onerror chain, aliasGlobals for naming mismatches, initScript for globals that need setup, and when NOT to use CDN.",
+  "version": "0.1.0",
+  "tags": ["cdn", "performance", "build"],
+  "triggers": ["configure cdn", "use cdn", "external vendor", "move react to cdn", "reduce bundle size"],
+  "globs": ["project.config.ts"],
+  "alwaysApply": false,
+  "references": [
+    { "title": "CDN deep dive", "url": "https://juwenzhang.github.io/lhx-kit/guide/cdn" },
+    { "title": "Performance optimisation", "url": "https://juwenzhang.github.io/lhx-kit/guide/performance" }
+  ]
+}

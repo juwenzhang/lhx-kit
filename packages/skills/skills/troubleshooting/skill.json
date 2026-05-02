@@ -1,0 +1,21 @@
+{
+  "name": "troubleshooting",
+  "title": "Troubleshooting Playbook",
+  "description": "Diagnostic flowchart for common lhx-kit issues: dev server won't start, build produces wrong output, CDN fails at runtime, offline zip empty, env vars undefined. Start here when the user reports a symptom without knowing the cause.",
+  "version": "0.1.0",
+  "tags": ["debug", "troubleshooting", "diagnostics"],
+  "triggers": [
+    "not working",
+    "build fails",
+    "dev server",
+    "env undefined",
+    "cdn error",
+    "why is this broken",
+    "lhx-cli doctor"
+  ],
+  "alwaysApply": false,
+  "references": [
+    { "title": "CLI doctor reference", "url": "https://juwenzhang.github.io/lhx-kit/cli/reference#doctor" },
+    { "title": "FAQ", "url": "https://juwenzhang.github.io/lhx-kit/reference/faq" }
+  ]
+}

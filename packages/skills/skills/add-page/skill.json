@@ -1,0 +1,14 @@
+{
+  "name": "add-page",
+  "title": "Add a Page",
+  "description": "Step-by-step procedure to add a new page to a lhx-kit MPA project. Use the CLI for AST-safe edits instead of hand-patching project.config.ts. Covers router wiring, lazy loading, and common pitfalls.",
+  "version": "0.1.0",
+  "tags": ["page", "routing", "cli", "ast"],
+  "triggers": ["add a page", "new page", "create a page", "add route", "new route"],
+  "globs": ["project.config.ts", "src/pages/**"],
+  "alwaysApply": false,
+  "references": [
+    { "title": "Getting started", "url": "https://juwenzhang.github.io/lhx-kit/guide/getting-started" },
+    { "title": "CLI add page", "url": "https://juwenzhang.github.io/lhx-kit/cli/reference#add-page" }
+  ]
+}

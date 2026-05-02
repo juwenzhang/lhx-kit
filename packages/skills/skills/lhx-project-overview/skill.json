@@ -1,0 +1,14 @@
+{
+  "name": "lhx-project-overview",
+  "title": "lhx-kit Project Overview",
+  "description": "High-level map of a lhx-kit project: what each config file does, which command triggers which pipeline, and where to look when things go wrong. Use this skill to orient the agent before any concrete task.",
+  "version": "0.1.0",
+  "tags": ["overview", "architecture", "onboarding"],
+  "triggers": ["explain the project", "what is this project", "how does the build work", "project structure"],
+  "globs": ["project.config.ts", "offline.config.ts", "vite.config.*"],
+  "alwaysApply": true,
+  "references": [
+    { "title": "Architecture docs", "url": "https://juwenzhang.github.io/lhx-kit/guide/architecture" },
+    { "title": "CLI reference", "url": "https://juwenzhang.github.io/lhx-kit/cli/reference" }
+  ]
+}

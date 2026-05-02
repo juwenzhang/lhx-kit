@@ -1,0 +1,13 @@
+{
+  "name": "mobile-adaptation",
+  "title": "Mobile Adaptation (rem + desktop center)",
+  "description": "Configure the mobile rem adapter: clientWidth/10 computation, maxWidth for desktop preview, deviceOverrides for iPad/iPhone-specific scales. Explains postcss-pxtorem setup and the 750-design-width convention.",
+  "version": "0.1.0",
+  "tags": ["mobile", "rem", "adaptation", "responsive"],
+  "triggers": ["mobile adapter", "responsive", "rem", "px to rem", "iphone scale", "design width 750"],
+  "globs": ["project.config.ts", "postcss.config.*", "src/reset.css"],
+  "alwaysApply": false,
+  "references": [
+    { "title": "Mobile adaptation deep dive", "url": "https://juwenzhang.github.io/lhx-kit/guide/mobile-adaptation" }
+  ]
+}

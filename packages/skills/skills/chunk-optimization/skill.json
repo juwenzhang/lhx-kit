@@ -1,0 +1,13 @@
+{
+  "name": "chunk-optimization",
+  "title": "Chunk Optimization (experimentalMinChunkSize)",
+  "description": "Understand the lhx-kit chunking strategy: FAMILY_GROUPS vendor splitting, experimentalMinChunkSize=10KB floor, and why react-dom is NOT tree-shakable. Use this when someone asks to 'optimize chunks' or 'reduce the number of JS files'.",
+  "version": "0.1.0",
+  "tags": ["performance", "chunks", "build", "vite"],
+  "triggers": ["too many chunks", "optimize chunks", "reduce js files", "bundle size", "tree-shake react"],
+  "globs": ["project.config.ts", "vite.config.*"],
+  "alwaysApply": false,
+  "references": [
+    { "title": "Performance optimisation", "url": "https://juwenzhang.github.io/lhx-kit/guide/performance" }
+  ]
+}

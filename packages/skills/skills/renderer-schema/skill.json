@@ -1,0 +1,11 @@
+{
+  "name": "renderer-schema",
+  "title": "Renderer Schema (JSON → UI)",
+  "description": "Author low-code schemas for @lhx-kit/renderer. Covers walker traversal, expression bindings (state/action/condition), mergeSchema for variants, and the React / Vue adapters. Use this when the task is to build a schema-driven page or dynamic form.",
+  "version": "0.1.0",
+  "tags": ["renderer", "schema", "low-code"],
+  "triggers": ["schema-driven", "low-code", "render json", "dynamic form", "renderer schema"],
+  "globs": ["**/*.schema.json", "**/schema/**"],
+  "alwaysApply": false,
+  "references": [{ "title": "Renderer overview", "url": "https://juwenzhang.github.io/lhx-kit/renderer/overview" }]
+}

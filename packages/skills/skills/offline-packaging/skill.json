@@ -1,0 +1,13 @@
+{
+  "name": "offline-packaging",
+  "title": "Offline Hybrid Packaging",
+  "description": "Bundle built pages into a hybrid .zip (offline package) with manifest, sha256, rollback strategy, and prefetch rules. Explains the YYYYMMDD_ts_type_vX.X.X.zip naming, whitelistPages filtering, and offline inspect workflow.",
+  "version": "0.1.0",
+  "tags": ["offline", "hybrid", "zip", "deployment"],
+  "triggers": ["offline build", "hybrid package", "create offline zip", "mobile app webview", "lhx-cli offline"],
+  "globs": ["offline.config.ts", "project.config.ts"],
+  "alwaysApply": false,
+  "references": [
+    { "title": "Offline packaging overview", "url": "https://juwenzhang.github.io/lhx-kit/offline/overview" }
+  ]
+}
