@@ -1,0 +1,37 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
+
+  "changelog": ["@changesets/changelog-github", { "repo": "juwenzhang/lhx-kit" }],
+
+  "commit": false,
+
+  "baseBranch": "master",
+
+  "access": "public",
+
+  "fixed": [
+    [
+      "@lhx-kit/config",
+      "@lhx-kit/runtime",
+      "@lhx-kit/renderer",
+      "@lhx-kit/offline",
+      "@lhx-kit/vite-plugin",
+      "@lhx-kit/cli",
+      "@lhx-kit/skills",
+      "@lhx-kit/tsconfig"
+    ]
+  ],
+
+  "linked": [],
+
+  "updateInternalDependencies": "patch",
+
+  "ignore": [
+    "@lhx-kit/docs",
+    "@lhx-kit/example-config-demo",
+    "@lhx-kit/example-renderer-react-demo",
+    "@lhx-kit/example-renderer-vue-demo",
+    "rmpa",
+    "vmpa"
+  ]
+}
