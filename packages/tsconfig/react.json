@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@lhx-kit/tsconfig/react",
+  "extends": "./library.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": []
+  }
+}

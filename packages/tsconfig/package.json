@@ -1,0 +1,42 @@
+{
+  "name": "@lhx-kit/tsconfig",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared TypeScript configuration presets for the lhx-kit monorepo (base/library/react/vue/node). Designed so packages can `extends` via Node resolution — works identically before AND after npm publish.",
+  "keywords": ["lhx-kit", "tsconfig", "typescript", "shared-config"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/tsconfig"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "files": [
+    "base.json",
+    "library.json",
+    "react.json",
+    "vue.json",
+    "node.json",
+    "app-react.json",
+    "app-vue.json",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "typecheck": "echo 'tsconfig package has no TS sources; skip'",
+    "build": "echo 'tsconfig package ships JSON only; nothing to build'"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

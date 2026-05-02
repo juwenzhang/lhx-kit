@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "@lhx-kit/tsconfig/vue",
+  "extends": "./library.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "preserveValueImports": false,
+    "types": []
+  }
+}
