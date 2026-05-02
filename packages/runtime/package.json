@@ -1,7 +1,6 @@
 {
   "name": "@lhx-kit/runtime",
   "version": "0.0.2",
-  "private": true,
   "description": "Browser runtime toolkit: request, env, mobile (rem adaptation), logger, bridge, auth, mock, experiment, theme, cdn-loader.",
   "keywords": ["lhx-kit", "runtime", "axios", "rem", "lib-flexible", "msw", "feature-flag", "cdn-loader"],
   "license": "MIT",

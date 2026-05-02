@@ -1,7 +1,6 @@
 {
   "name": "@lhx-kit/config",
   "version": "0.0.2",
-  "private": true,
   "description": "Project and offline config schema, loader, and helpers for lhx-kit. SSOT for the whole toolchain.",
   "keywords": ["lhx-kit", "config", "schema", "zod", "jiti", "monorepo"],
   "license": "MIT",
