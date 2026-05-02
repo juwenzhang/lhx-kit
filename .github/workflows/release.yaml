@@ -61,7 +61,7 @@ jobs:
           token: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         # version is read from root package.json "packageManager"
 
       - name: Setup Node.js
