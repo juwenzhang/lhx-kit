@@ -120,8 +120,13 @@ jobs:
         # 不存在，pnpm 虽然建了 .bin/lhx-cli 的 symlink 但目标文件不存
         # 在；build 产出 dist 后不会自动重建 shim。这里显式 rebuild 一
         # 下，让 examples/* 里的 `lhx-cli build` 能找到可执行文件。
-        # 用 `--offline` 避免重新解析网络；lockfile 没变只是补 symlink。
-        run: pnpm install --offline
+        #
+        # 为什么不是 `pnpm install --offline`？那个在 pnpm 9 下不会重
+        # 新处理 workspace 内部包的 bin symlink，导致 examples/vmpa 里
+        # `lhx-cli: command not found`（Exit 127）。必须重新跑完整的
+        # install 让 pnpm 重新建 .bin/ 链接。lockfile 已经 frozen，
+        # --prefer-offline 保证不走网络。
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Typecheck all workspaces
         run: pnpm -r --if-present --parallel typecheck
