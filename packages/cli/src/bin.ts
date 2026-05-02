@@ -36,9 +36,11 @@ export async function main(): Promise<void> {
     );
 
   cli
-    .command('add [kind] [name]', 'Generate a page / component / api / service / store / schema / module')
+    .command('add [kind] [name]', 'Generate a page / component / api / service / store / schema / module / package')
     .option('--title <title>', 'For `add page`: display title')
     .option('--offline', 'For `add page`: mark the page offline and add to offline.whitelistPages')
+    .option('--description <text>', 'For `add package`: short description written into package.json')
+    .option('--force', 'For `add package`: overwrite target directory if it already exists')
     .option('--yes', 'Non-interactive mode (require all arguments to be provided)')
     .action((kind: AddKind | undefined, name: string | undefined, options: Record<string, unknown>) =>
       runAddCommand(context, kind, name, options as never)
@@ -166,7 +168,9 @@ function customHelpBody(version: string): string {
   lines.push('');
   lines.push(cyan('Commands:'));
   lines.push('  create [name]                 Scaffold a new project');
-  lines.push('  add <kind> <name>             Generate page | component | api | service | store | schema | module');
+  lines.push(
+    '  add <kind> <name>             Generate page | component | api | service | store | schema | module | package'
+  );
   lines.push('  dev [--page|--pages <list>]   Run dev server');
   lines.push('  build [--page|--pages <list>] Build project');
   lines.push('  preview [--page|--pages]      Preview built project');
@@ -179,6 +183,7 @@ function customHelpBody(version: string): string {
   lines.push(cyan('Examples:'));
   lines.push('  lhx-cli create               # interactive');
   lines.push('  lhx-cli add page cashier --offline');
+  lines.push('  lhx-cli add package my-lib --description="Shared helpers"');
   lines.push('  lhx-cli dev --page=home');
   lines.push('  lhx-cli build --pages=home,profile');
   lines.push('  lhx-cli offline build --hybrid-type=prod');

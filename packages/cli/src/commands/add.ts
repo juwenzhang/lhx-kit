@@ -7,18 +7,22 @@ import type {CliContext} from '../context';
 import {type ResolvedProjectConfig, requireProject} from '../project';
 import {info, muted, section, success, warn} from '../ui';
 
-export type AddKind = 'page' | 'component' | 'api' | 'service' | 'store' | 'schema' | 'module';
+export type AddKind = 'page' | 'component' | 'api' | 'service' | 'store' | 'schema' | 'module' | 'package';
 
 export interface AddOptions {
   /** For `add page`: override the human-readable title. */
   title?: string;
   /** For `add page`: also register the page under offline whitelist. */
   offline?: boolean;
+  /** For `add package`: description written into package.json. */
+  description?: string;
+  /** For `add package`: force overwrite if target dir exists. */
+  force?: boolean;
   /** Non-interactive mode; all required args must come from the CLI. */
   yes?: boolean;
 }
 
-const ALL_KINDS: AddKind[] = ['page', 'component', 'api', 'service', 'store', 'schema', 'module'];
+const ALL_KINDS: AddKind[] = ['page', 'component', 'api', 'service', 'store', 'schema', 'module', 'package'];
 
 const KIND_DESCRIPTIONS: Record<AddKind, string> = {
   page: 'A multi-page entry (upserts into project.config.ts)',
@@ -27,7 +31,8 @@ const KIND_DESCRIPTIONS: Record<AddKind, string> = {
   service: 'A domain service class',
   store: 'A state store (Pinia for vue3, Zustand for react)',
   schema: 'A renderer v1 JSON schema scaffold',
-  module: 'A plain TypeScript module'
+  module: 'A plain TypeScript module',
+  package: 'A new publishable workspace under packages/<name> (monorepo only)'
 };
 
 /* ----------------------------- templates ----------------------------- */
@@ -465,11 +470,10 @@ export async function runAddCommand(
   nameArg: string | undefined,
   options: AddOptions = {}
 ): Promise<void> {
-  const {project, offline} = await requireProject(context.cwd);
-  const cfg = project.config;
-  const framework = cfg.framework;
-
-  // Resolve `kind` — prompt if missing and interactive, else hard fail.
+  // `add package` operates on a monorepo's packages/ directory and does NOT
+  // require the invoking cwd to be an lhx-kit project. All other kinds DO
+  // require a project (they edit project.config.ts or files inside src/).
+  // We resolve `kind` FIRST so we can take the right branch.
   let kind = kindArg;
   if (!kind) {
     if (options.yes || !isInteractive()) {
@@ -480,6 +484,24 @@ export async function runAddCommand(
   if (!ALL_KINDS.includes(kind)) {
     throw new Error(`Unsupported add kind "${kind}". Available: ${ALL_KINDS.join(' | ')}`);
   }
+
+  // ---- package branch: monorepo scaffolding, no project.config.ts needed ----
+  if (kind === 'package') {
+    let pkgName = nameArg;
+    if (!pkgName) {
+      if (options.yes || !isInteractive()) {
+        throw new Error('Missing <name> for `add package`. Example: lhx-cli add package my-pkg');
+      }
+      pkgName = await promptPackageName();
+    }
+    await addPackage(context, pkgName, options);
+    return;
+  }
+
+  // ---- project-level branch: everything else below requires project ----
+  const {project, offline} = await requireProject(context.cwd);
+  const cfg = project.config;
+  const framework = cfg.framework;
 
   // Resolve `name`.
   let name = nameArg;
@@ -657,3 +679,342 @@ function relative(context: CliContext, absolute: string): string {
   }
   return absolute;
 }
+
+/* --------------------------- add package --------------------------- */
+
+/**
+ * Locate the nearest monorepo root (has both `pnpm-workspace.yaml` and a
+ * `packages/` directory) by walking up from cwd. Returns null when not in a
+ * monorepo — `addPackage` then falls back to an advisory message instead of
+ * throwing, since users might run `lhx-cli add package` inside a regular
+ * project by mistake and deserve clear guidance.
+ */
+function findMonorepoRoot(startDir: string): string | null {
+  let dir = startDir;
+  // Walk up at most 10 levels — enough for any realistic nesting.
+  for (let i = 0; i < 10; i += 1) {
+    const workspaceYaml = join(dir, 'pnpm-workspace.yaml');
+    const packagesDir = join(dir, 'packages');
+    if (existsSync(workspaceYaml) && existsSync(packagesDir)) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break; // reached fs root
+    dir = parent;
+  }
+  return null;
+}
+
+async function promptPackageName(): Promise<string> {
+  const res = await prompts(
+    {
+      type: 'text',
+      name: 'name',
+      message: 'Package name (short form, e.g. "my-pkg" — final name will be @lhx-kit/my-pkg)',
+      validate: value => {
+        if (!value) return 'Name is required.';
+        if (!kebabOk(value)) return 'Use lowercase kebab-case (e.g. "my-pkg").';
+        return true;
+      }
+    },
+    {onCancel}
+  );
+  return (res.name as string).trim();
+}
+
+/**
+ * Scaffold a new publishable workspace under `packages/<name>`.
+ *
+ * Creates a minimal TS library pre-wired for the lhx-kit monorepo conventions:
+ *   - package.json with correct `@lhx-kit/<name>` identity, ESM exports,
+ *     `files` allowlist, `publishConfig.access=public`, tsup + typecheck
+ *     scripts, workspace-level devDependencies on `@lhx-kit/tsconfig`.
+ *   - tsconfig.json extending `@lhx-kit/tsconfig/library.json`.
+ *   - tsup.config.ts using our standard ESM dual-build settings.
+ *   - src/index.ts with a starter named export.
+ *   - README.md + README.zh-CN.md skeletons that mention install + link back
+ *     to the docs site.
+ *   - LICENSE referencing MIT (Changesets will use this on publish).
+ *
+ * NOT created:
+ *   - CHANGELOG.md — owned by Changesets. Writing one here would confuse
+ *     `changeset version` into treating it as a stale changelog file.
+ *   - tests/ — intentional; keep the starter minimal. Users can add after.
+ *
+ * Post-scaffold, the function nudges the user toward the three follow-ups
+ * that every new package needs (pnpm install, write changeset, configure
+ * Trusted Publisher on first publish).
+ */
+async function addPackage(context: CliContext, name: string, options: AddOptions): Promise<void> {
+  section(`add package ${name}`);
+
+  if (!kebabOk(name)) {
+    throw new Error(`Package name "${name}" must be lowercase kebab-case (e.g. "my-pkg").`);
+  }
+
+  // Monorepo detection: must find a pnpm workspace root above cwd.
+  const repoRoot = findMonorepoRoot(context.cwd);
+  if (!repoRoot) {
+    warn('add package: not running inside a pnpm monorepo.');
+    info('Detected missing `pnpm-workspace.yaml` or `packages/` up from cwd.');
+    info('');
+    info('This command scaffolds a workspace under packages/<name>/. You probably want:');
+    info('  • For a single-app project:        lhx-cli add module <name>');
+    info('  • For a brand-new project:         lhx-cli create <name>');
+    info('  • If you DO want a monorepo here:  cd into its root first, then retry.');
+    throw new Error('add package requires a pnpm monorepo root.');
+  }
+
+  const pkgDir = join(repoRoot, 'packages', name);
+  if (existsSync(pkgDir)) {
+    if (options.force) {
+      warn(`packages/${name} already exists — overwriting because --force is set.`);
+      await fse.remove(pkgDir);
+    } else {
+      throw new Error(`packages/${name} already exists. Pass --force to overwrite.`);
+    }
+  }
+
+  // Infer the scope from the root package.json's name when it's scoped;
+  // otherwise default to @lhx-kit. This lets forks use their own scope
+  // without having to patch the CLI.
+  const rootPkgPath = join(repoRoot, 'package.json');
+  let scope = '@lhx-kit';
+  if (existsSync(rootPkgPath)) {
+    try {
+      const rootPkg = JSON.parse(await fse.readFile(rootPkgPath, 'utf8')) as {name?: string};
+      if (rootPkg.name?.startsWith('@')) {
+        scope = rootPkg.name.split('/')[0];
+      }
+    } catch {
+      // ignore; fall back to default scope
+    }
+  }
+
+  const fullName = `${scope}/${name}`;
+  const description = options.description ?? `${fullName} package (scaffolded by lhx-cli add package).`;
+  const vars = {
+    name,
+    fullName,
+    scope,
+    Name: toPascal(name),
+    camelName: toCamel(name),
+    description
+  };
+
+  await fse.ensureDir(pkgDir);
+  await fse.ensureDir(join(pkgDir, 'src'));
+
+  const files: Array<[string, string]> = [
+    ['package.json', applyTemplate(PKG_PACKAGE_JSON, vars)],
+    ['tsconfig.json', applyTemplate(PKG_TSCONFIG, vars)],
+    ['tsup.config.ts', applyTemplate(PKG_TSUP_CONFIG, vars)],
+    ['src/index.ts', applyTemplate(PKG_SRC_INDEX, vars)],
+    ['README.md', applyTemplate(PKG_README, vars)],
+    ['README.zh-CN.md', applyTemplate(PKG_README_ZH, vars)],
+    ['LICENSE', PKG_LICENSE]
+  ];
+
+  for (const [rel, body] of files) {
+    await fse.writeFile(join(pkgDir, rel), body, 'utf8');
+    success(`created packages/${name}/${rel}`);
+  }
+
+  section('next steps');
+  info('  1. pnpm install                                   ← link the new workspace');
+  info(`  2. cd packages/${name} && pnpm build                 ← verify dist/ is produced`);
+  info('  3. pnpm changeset                                 ← declare intent before first publish');
+  info('  4. (one-time, per package) configure npm Trusted Publisher:');
+  info(`       https://www.npmjs.com/package/${fullName}/access`);
+  info('');
+  muted('See https://juwenzhang.github.io/lhx-kit/engineering/release-pipeline for the full flow.');
+}
+
+/* ---- add-package templates ---- */
+
+const PKG_PACKAGE_JSON = `{
+  "name": "{{fullName}}",
+  "version": "0.0.0",
+  "description": "{{description}}",
+  "keywords": ["lhx-kit"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/{{name}}"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "{{scope}}/tsconfig": "workspace:*",
+    "@types/node": "^25.6.0",
+    "tsup": "^8.3.5",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}
+`;
+
+const PKG_TSCONFIG = `{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "{{scope}}/tsconfig/library.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}
+`;
+
+const PKG_TSUP_CONFIG = `import {defineConfig} from 'tsup';
+
+/**
+ * tsup build config for {{fullName}}.
+ * - ESM-only output (matches \`"type": "module"\` in package.json).
+ * - Emits .d.ts via tsup's bundled dts pipeline; keep tsc for typecheck only.
+ * - No minification: published tarballs should remain readable for debugging.
+ */
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm'],
+  dts: true,
+  clean: true,
+  sourcemap: false,
+  splitting: false,
+  treeshake: true,
+  target: 'node18'
+});
+`;
+
+const PKG_SRC_INDEX = `/**
+ * {{fullName}} — {{description}}
+ *
+ * Replace the starter export below with the real API surface for this package.
+ * Remember to update README.md with usage examples before publishing.
+ */
+
+export const {{camelName}}Version = '0.0.0';
+
+/**
+ * Example helper. Delete once you add your real implementation.
+ */
+export function hello{{Name}}(who = 'world'): string {
+  return \`Hello, \${who}! (from {{fullName}})\`;
+}
+`;
+
+const PKG_README = `# {{fullName}}
+
+> {{description}}
+
+## Install
+
+\`\`\`bash
+npm install {{fullName}}
+# or
+pnpm add {{fullName}}
+\`\`\`
+
+## Usage
+
+\`\`\`ts
+import {hello{{Name}}} from '{{fullName}}';
+
+console.log(hello{{Name}}('reader'));
+\`\`\`
+
+## Docs
+
+See the full lhx-kit documentation: <https://juwenzhang.github.io/lhx-kit/>
+
+## License
+
+[MIT](./LICENSE) © luhanxin
+`;
+
+const PKG_README_ZH = `# {{fullName}}
+
+> {{description}}
+
+## 安装
+
+\`\`\`bash
+npm install {{fullName}}
+# 或
+pnpm add {{fullName}}
+\`\`\`
+
+## 用法
+
+\`\`\`ts
+import {hello{{Name}}} from '{{fullName}}';
+
+console.log(hello{{Name}}('读者'));
+\`\`\`
+
+## 文档
+
+完整的 lhx-kit 文档：<https://juwenzhang.github.io/lhx-kit/>
+
+## License
+
+[MIT](./LICENSE) © luhanxin
+`;
+
+const PKG_LICENSE = `MIT License
+
+Copyright (c) 2026 luhanxin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
