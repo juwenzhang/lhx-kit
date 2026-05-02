@@ -52,15 +52,15 @@
     "pnpm": ">=9.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.4.14",
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.31.0",
-    "@commitlint/cli": "^19.6.1",
-    "@commitlint/config-conventional": "^19.6.0",
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "@resvg/resvg-js": "^2.6.2",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.11",
-    "typescript": "^5.4.0"
+    "lint-staged": "^16.4.0",
+    "typescript": "^6.0.3"
   },
   "pnpm": {
     "peerDependencyRules": {
