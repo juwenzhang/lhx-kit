@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.14/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -8,25 +8,24 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      "**/dist/**",
-      "**/dist-offline/**",
-      "**/doc_build/**",
-      "**/node_modules/**",
-      "**/.lhx-kit/**",
-      "**/.codebuddy/**",
-      "**/coverage/**",
-      "**/*.min.js",
-      "**/pnpm-lock.yaml",
-      "**/generated/**",
-      "packages/cli/templates/**",
-      "apps/docs/doc_build/**",
-      "examples/**"
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/dist-offline",
+      "!**/doc_build",
+      "!**/node_modules",
+      "!**/.lhx-kit",
+      "!**/.codebuddy",
+      "!**/coverage",
+      "!**/*.min.js",
+      "!**/pnpm-lock.yaml",
+      "!**/generated",
+      "!**/packages/cli/templates",
+      "!**/apps/docs/doc_build",
+      "!**/examples"
     ]
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
@@ -70,16 +69,16 @@
       "style": {
         "useConst": "warn",
         "useTemplate": "warn",
-        "useShorthandArrayType": "warn",
         "noNonNullAssertion": "warn",
         "noUnusedTemplateLiteral": "warn",
-        "useNamingConvention": "off"
+        "useNamingConvention": "off",
+        "useConsistentArrayType": { "level": "warn", "options": { "syntax": "shorthand" } }
       },
       "suspicious": {
         "noExplicitAny": "warn",
-        "noConsoleLog": "off",
         "noDebugger": "error",
-        "noAssignInExpressions": "warn"
+        "noAssignInExpressions": "warn",
+        "noConsole": { "level": "off", "options": { "allow": ["log"] } }
       },
       "complexity": {
         "noBannedTypes": "warn",
@@ -97,7 +96,7 @@
   },
   "overrides": [
     {
-      "include": ["**/*.md", "**/*.mdx"],
+      "includes": ["**/*.md", "**/*.mdx"],
       "formatter": {
         "enabled": false
       },
@@ -106,7 +105,7 @@
       }
     },
     {
-      "include": ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
+      "includes": ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -119,7 +118,7 @@
       }
     },
     {
-      "include": ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs"],
+      "includes": ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs"],
       "linter": {
         "rules": {
           "style": {

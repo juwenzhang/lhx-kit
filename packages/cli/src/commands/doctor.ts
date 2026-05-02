@@ -1,4 +1,4 @@
-import {existsSync, readFileSync, readdirSync, statSync} from 'node:fs';
+import {existsSync, readdirSync, readFileSync, statSync} from 'node:fs';
 import {isAbsolute, join, resolve as resolvePath} from 'node:path';
 import {extractPlaceholders} from '@lhx-kit/config';
 import type {CliContext} from '../context';

@@ -7,10 +7,11 @@
  * `@lhx-kit/renderer/schema-zod` and should be imported explicitly
  * (typically via a dynamic `import()`) when runtime parsing is needed.
  */
-export * from './schema';
+
 export * from './expression';
-export * from './registry';
 export * from './merge';
+export * from './registry';
 export * from './remote';
+export * from './schema';
 export * from './variant';
 export * from './walker';

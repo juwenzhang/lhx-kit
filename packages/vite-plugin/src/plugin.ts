@@ -3,12 +3,12 @@ import {createRequire} from 'node:module';
 import {dirname, join, relative, resolve} from 'node:path';
 import {
   type EnvEntry,
-  type ResolvedCdnEntry,
-  type ResolvedOfflineConfig,
-  type ResolvedProjectConfig,
   loadOfflineConfig,
   loadProjectConfig,
   normalizeEnvMode,
+  type ResolvedCdnEntry,
+  type ResolvedOfflineConfig,
+  type ResolvedProjectConfig,
   resolveEnv
 } from '@lhx-kit/config';
 import {
@@ -21,7 +21,7 @@ import {
 import type {Plugin, UserConfig} from 'vite';
 import {type CompressOptions, lhxCompress} from './compress';
 import {type HtmlCdnInjection, renderPageHtml, rewriteModuleScriptWithCdnGate} from './html';
-import {RESOLVED_VIRTUAL_ID, VIRTUAL_ID, renderVirtualModuleCode, serializeConfig} from './virtual';
+import {RESOLVED_VIRTUAL_ID, renderVirtualModuleCode, serializeConfig, VIRTUAL_ID} from './virtual';
 
 /**
  * Built-in defaults. Every value is overridable via `LhxKitPluginOptions`.
@@ -361,7 +361,7 @@ function reportOversizedChunks(bundle: Record<string, unknown>, softLimitBytes: 
   // eslint-disable-next-line no-console
   console.warn(
     `\n[lhx-kit] ${offenders.length} chunk(s) exceed ${(softLimitBytes / 1024).toFixed(0)}KB` +
-      ` (informational; matches small-program package budget):`
+      ' (informational; matches small-program package budget):'
   );
   for (const o of offenders) {
     // eslint-disable-next-line no-console
@@ -727,6 +727,12 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
           // Lift the warning threshold so our 50KB chunk-split policy below
           // (which actively limits chunk size) is the source of truth.
           chunkSizeWarningLimit: userConfig.build?.chunkSizeWarningLimit ?? 100,
+          // Vite 8 uses Rolldown as its bundler; its RolldownOptions type
+          // disagrees with the historical Rollup shape on a few internal
+          // fields (`manualChunks` signature, `experimentalMinChunkSize`,
+          // tuple-output quirks) even though the runtime still accepts the
+          // Rollup-style object unchanged. Cast once here so we keep the
+          // readable Rollup API above without chasing a moving target type.
           rollupOptions: {
             input,
             ...(c.cdn.active
@@ -757,7 +763,8 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
                     experimentalMinChunkSize: 10 * 1024
                   }
                 })
-          }
+            // biome-ignore lint/suspicious/noExplicitAny: see rollupOptions comment above
+          } as any
         },
         // esbuild-level options for the production minifier. `drop_console`-
         // equivalent behaviour: strip console.log/debug calls from prod
@@ -1133,7 +1140,7 @@ function patchChunkImports(bundle: Record<string, unknown>): void {
     let code = a.code;
 
     // 1 + 2: `"./foo-xxx.js"` (static or dynamic ESM import).
-    code = code.replace(/(["'])\.\/([\w.\-]+\.[cm]?js)\1/g, (match, quote, basename) => {
+    code = code.replace(/(["'])\.\/([\w.-]+\.[cm]?js)\1/g, (match, quote, basename) => {
       const target = fileByBasename.get(basename);
       if (!target) return match;
       const rel = relativePosixPath(importerDir, target);
@@ -1144,7 +1151,7 @@ function patchChunkImports(bundle: Record<string, unknown>): void {
     // mapDeps resolves `E = s => "/" + s`, so the literal is "absolute from
     // dist root WITHOUT a leading slash". Rewrite to the final path minus
     // leading slash so the runtime fetches the correct URL.
-    code = code.replace(/(["'])(assets\/[\w.\-]+\.(?:[cm]?js|css))\1/g, (match, quote, pathStr) => {
+    code = code.replace(/(["'])(assets\/[\w.-]+\.(?:[cm]?js|css))\1/g, (match, quote, pathStr) => {
       const basename = pathStr.split('/').pop()!;
       const target = fileByBasename.get(basename);
       if (!target) return match;

@@ -2,7 +2,16 @@
   "name": "@lhx-kit/runtime",
   "version": "0.0.2",
   "description": "Browser runtime toolkit: request, env, mobile (rem adaptation), logger, bridge, auth, mock, experiment, theme, cdn-loader.",
-  "keywords": ["lhx-kit", "runtime", "axios", "rem", "lib-flexible", "msw", "feature-flag", "cdn-loader"],
+  "keywords": [
+    "lhx-kit",
+    "runtime",
+    "axios",
+    "rem",
+    "lib-flexible",
+    "msw",
+    "feature-flag",
+    "cdn-loader"
+  ],
   "license": "MIT",
   "author": "luhanxin",
   "repository": {
@@ -63,7 +72,15 @@
       "default": "./dist/cdn-loader.js"
     }
   },
-  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public",
@@ -91,6 +108,7 @@
     "@lhx-kit/tsconfig": "workspace:*",
     "@types/node": "^25.6.0",
     "@types/ua-parser-js": "^0.7.39",
+    "msw": "^2.14.2",
     "tsup": "^8.3.5",
     "typescript": "^6.0.3"
   },

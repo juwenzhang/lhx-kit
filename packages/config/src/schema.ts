@@ -141,8 +141,8 @@ export const envEntrySchema = z
   .object({
     apiBase: z.string().optional(),
     publicPath: z.string().optional(),
-    proxy: z.record(viteProxyEntrySchema).optional(),
-    define: z.record(z.unknown()).optional()
+    proxy: z.record(z.string(), viteProxyEntrySchema).optional(),
+    define: z.record(z.string(), z.unknown()).optional()
   })
   .strict();
 
@@ -155,7 +155,7 @@ export const pageDefinitionSchema = z
     namespace: z.string().optional(),
     store: z.string().optional(),
     offline: z.boolean().optional(),
-    meta: z.record(z.string()).optional()
+    meta: z.record(z.string(), z.string()).optional()
   })
   .strict();
 
@@ -168,7 +168,7 @@ export const projectConfigSchema = z
     pagesDir: z.string().optional(),
     publicDir: z.string().optional(),
     outDir: z.string().optional(),
-    aliases: z.record(z.string()).optional(),
+    aliases: z.record(z.string(), z.string()).optional(),
     envs: z
       .object({
         dev: envEntrySchema.optional(),
@@ -179,7 +179,7 @@ export const projectConfigSchema = z
       .refine(envs => Object.values(envs).some(Boolean), {
         message: 'envs must declare at least one of dev/test/staging/prod'
       }),
-    pages: z.record(pageDefinitionSchema).refine(pages => Object.keys(pages).length > 0, {
+    pages: z.record(z.string(), pageDefinitionSchema).refine(pages => Object.keys(pages).length > 0, {
       message: 'pages must declare at least one page'
     }),
     /**
@@ -270,7 +270,7 @@ export const offlineConfigSchema = z
         strategy: z.enum(['previous', 'none']).optional()
       })
       .optional(),
-    metadata: z.record(z.string()).optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
     outDir: z.string().optional()
   })
   .strict();

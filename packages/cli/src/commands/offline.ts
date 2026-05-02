@@ -2,16 +2,16 @@ import {existsSync} from 'node:fs';
 import {copyFile, mkdir, rename} from 'node:fs/promises';
 import {dirname, join, resolve} from 'node:path';
 import {
-  type InspectionResult,
   buildOfflinePackage,
   formatBytes,
   generateOfflineManifest,
+  type InspectionResult,
   inspectOfflineOutput,
   writeOfflineManifest
 } from '@lhx-kit/offline';
 import {execa} from 'execa';
 import type {CliContext} from '../context';
-import {type HybridType, deriveOfflineConfig, formatOfflineZipName} from '../offline-adapter';
+import {deriveOfflineConfig, formatOfflineZipName, type HybridType} from '../offline-adapter';
 import {requireProject} from '../project';
 import {error, info, section, success, warn} from '../ui';
 

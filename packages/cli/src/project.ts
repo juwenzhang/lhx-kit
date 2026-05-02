@@ -12,13 +12,13 @@
 import {
   ConfigError,
   type Diagnostic,
-  type LoadResult,
-  type ResolvedOfflineConfig,
-  type ResolvedProjectConfig,
   findNearestProjectRoot,
   formatDiagnostics,
+  type LoadResult,
   loadOfflineConfig,
-  loadProjectConfig
+  loadProjectConfig,
+  type ResolvedOfflineConfig,
+  type ResolvedProjectConfig
 } from '@lhx-kit/config';
 
 export type {ResolvedOfflineConfig, ResolvedProjectConfig} from '@lhx-kit/config';

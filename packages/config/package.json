@@ -2,7 +2,14 @@
   "name": "@lhx-kit/config",
   "version": "0.0.2",
   "description": "Project and offline config schema, loader, and helpers for lhx-kit. SSOT for the whole toolchain.",
-  "keywords": ["lhx-kit", "config", "schema", "zod", "jiti", "monorepo"],
+  "keywords": [
+    "lhx-kit",
+    "config",
+    "schema",
+    "zod",
+    "jiti",
+    "monorepo"
+  ],
   "license": "MIT",
   "author": "luhanxin",
   "repository": {
@@ -23,7 +30,15 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public",

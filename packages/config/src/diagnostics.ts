@@ -17,10 +17,13 @@ export class ConfigError extends Error {
 
 export function diagnosticsFromZod(err: ZodError, source: string): Diagnostic[] {
   return err.issues.map(issue => ({
-    level: 'error',
+    level: 'error' as const,
     code: `zod/${issue.code}`,
     message: issue.message,
-    path: issue.path,
+    // zod 4 widened `issue.path` to `PropertyKey[]` (can include `symbol`).
+    // Normalise to (string | number)[] by stringifying any symbols —
+    // schemas here never use symbol keys, so this is lossless in practice.
+    path: issue.path.map(seg => (typeof seg === 'symbol' ? seg.toString() : seg)),
     source
   }));
 }

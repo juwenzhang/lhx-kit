@@ -5,11 +5,11 @@ import {resolveOfflineConfig, resolveProjectConfig} from './defaults';
 import {ConfigError, diagnosticsFromZod} from './diagnostics';
 import {
   type OfflineConfigRaw,
-  type ProjectConfigRaw,
-  type ResolvedOfflineConfig,
-  type ResolvedProjectConfig,
   offlineConfigSchema,
-  projectConfigSchema
+  type ProjectConfigRaw,
+  projectConfigSchema,
+  type ResolvedOfflineConfig,
+  type ResolvedProjectConfig
 } from './schema';
 
 const PROJECT_FILES = ['project.config.ts', 'project.config.mjs', 'project.config.js', 'project.config.json'];

@@ -2,7 +2,16 @@
   "name": "@lhx-kit/renderer",
   "version": "0.0.2",
   "description": "JSON config-driven renderer with Vue3 and React bindings. Walker / merge / variant / CSP-safe expression eval + lazy zod validation.",
-  "keywords": ["lhx-kit", "renderer", "json-schema", "config-driven", "low-code", "vue3", "react", "zod"],
+  "keywords": [
+    "lhx-kit",
+    "renderer",
+    "json-schema",
+    "config-driven",
+    "low-code",
+    "vue3",
+    "react",
+    "zod"
+  ],
   "license": "MIT",
   "author": "luhanxin",
   "repository": {
@@ -35,7 +44,15 @@
       "default": "./dist/schema-zod.js"
     }
   },
-  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public",

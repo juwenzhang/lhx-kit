@@ -44,20 +44,23 @@ const conditionExprSchema: z.ZodType<ConditionExpr> = z.lazy(() =>
 const actionSingleSchema = z
   .object({
     type: z.string(),
-    payload: z.record(valueExprSchema).optional()
+    payload: z.record(z.string(), valueExprSchema).optional()
   })
   .strict();
 
-const actionExprSchema: z.ZodType<ActionExpr> = z.union([actionSingleSchema, z.array(actionSingleSchema)]);
+const actionExprSchema: z.ZodType<ActionExpr> = z.union([
+  actionSingleSchema,
+  z.array(actionSingleSchema)
+]) as unknown as z.ZodType<ActionExpr>;
 
 const componentSchemaBase: z.ZodType<ComponentSchema> = z.lazy(() =>
   z
     .object({
       name: z.string().min(1),
       id: z.string().optional(),
-      props: z.record(z.unknown()).optional(),
+      props: z.record(z.string(), z.unknown()).optional(),
       children: z.array(componentSchemaBase).optional(),
-      slots: z.record(z.array(componentSchemaBase)).optional(),
+      slots: z.record(z.string(), z.array(componentSchemaBase)).optional(),
       when: conditionExprSchema.optional(),
       for: z
         .object({
@@ -66,11 +69,11 @@ const componentSchemaBase: z.ZodType<ComponentSchema> = z.lazy(() =>
         })
         .strict()
         .optional(),
-      events: z.record(actionExprSchema).optional(),
+      events: z.record(z.string(), actionExprSchema).optional(),
       slot: z.string().optional()
     })
     .strict()
-);
+) as unknown as z.ZodType<ComponentSchema>;
 
 export const pageSchema = z
   .object({
@@ -92,7 +95,7 @@ export const schemaPatchSchema: z.ZodType<SchemaPatch> = z.lazy(() =>
         z.object({name: z.string()}).strict(),
         z.object({path: z.array(z.number().int().nonnegative())}).strict()
       ]),
-      value: z.union([componentSchemaBase, z.record(z.unknown())]).optional(),
+      value: z.union([componentSchemaBase, z.record(z.string(), z.unknown())]).optional(),
       slot: z.string().optional()
     })
     .strict()

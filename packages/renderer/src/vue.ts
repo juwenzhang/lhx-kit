@@ -1,22 +1,22 @@
 import {
   type Component,
-  type DefineComponent,
-  type VNode,
   computed,
+  type DefineComponent,
   defineAsyncComponent,
   defineComponent,
   h,
   onMounted,
   ref,
-  shallowRef
+  shallowRef,
+  type VNode
 } from 'vue';
 import type {EvalContext} from './expression';
 import {mergeSchema} from './merge';
 import type {Registry} from './registry';
-import {type RemoteFetchOptions, fetchRemoteSchema} from './remote';
+import {fetchRemoteSchema, type RemoteFetchOptions} from './remote';
 import type {ActionExpr, PageSchema, RendererDiagnostic, SchemaPatch, VariantList} from './schema';
 import {resolveVariant} from './variant';
-import {type RenderNode, dispatchAction, walkComponents} from './walker';
+import {dispatchAction, type RenderNode, walkComponents} from './walker';
 
 export interface VueRendererOptions {
   /** Default schema (used when no variants supplied and no remote). */

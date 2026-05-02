@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs';
-import {readFile, readdir, stat} from 'node:fs/promises';
+import {readdir, readFile, stat} from 'node:fs/promises';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {type LoadedSkill, SkillManifestSchema} from './types';

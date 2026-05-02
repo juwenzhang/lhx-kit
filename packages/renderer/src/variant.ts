@@ -1,5 +1,5 @@
-import {evaluateCondition} from './expression';
 import type {EvalContext} from './expression';
+import {evaluateCondition} from './expression';
 import type {PageSchema, RendererDiagnostic, SchemaPatch, VariantList} from './schema';
 
 export interface ResolvedVariant {

@@ -2,7 +2,15 @@
   "name": "@lhx-kit/cli",
   "version": "0.0.2",
   "description": "lhx-kit CLI: scaffold real-world MPA projects with create / add / dev / build / info / doctor / offline / upgrade commands.",
-  "keywords": ["lhx-kit", "cli", "scaffold", "generator", "monorepo", "mpa", "vite"],
+  "keywords": [
+    "lhx-kit",
+    "cli",
+    "scaffold",
+    "generator",
+    "monorepo",
+    "mpa",
+    "vite"
+  ],
   "license": "MIT",
   "author": "luhanxin",
   "repository": {

@@ -15,7 +15,18 @@
   "bugs": {
     "url": "https://github.com/juwenzhang/lhx-kit/issues"
   },
-  "keywords": ["mpa", "vite", "cli", "scaffold", "monorepo", "react", "vue3", "offline", "hybrid", "cdn"],
+  "keywords": [
+    "mpa",
+    "vite",
+    "cli",
+    "scaffold",
+    "monorepo",
+    "react",
+    "vue3",
+    "offline",
+    "hybrid",
+    "cdn"
+  ],
   "scripts": {
     "bootstrap": "pnpm install",
     "postinstall": "husky",
@@ -64,7 +75,14 @@
   },
   "pnpm": {
     "peerDependencyRules": {
-      "ignoreMissing": ["@algolia/client-search", "react", "react-dom", "vue", "@types/react", "@types/react-dom"],
+      "ignoreMissing": [
+        "@algolia/client-search",
+        "react",
+        "react-dom",
+        "vue",
+        "@types/react",
+        "@types/react-dom"
+      ],
       "allowedVersions": {
         "vite": "^5.0.0 || ^6.0.0 || ^7.0.0"
       }

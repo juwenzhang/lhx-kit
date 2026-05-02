@@ -24,12 +24,12 @@ import {cursorAdapter} from './adapters/cursor';
 import {plainAdapter} from './adapters/plain';
 import type {LoadedSkill, SkillAdapter, SkillRenderResult, SkillTarget} from './types';
 
-export * from './types';
-export * from './registry';
+export {claudeAdapter} from './adapters/claude';
 export {codebuddyAdapter} from './adapters/codebuddy';
 export {cursorAdapter} from './adapters/cursor';
-export {claudeAdapter} from './adapters/claude';
 export {plainAdapter} from './adapters/plain';
+export * from './registry';
+export * from './types';
 
 /**
  * Registry of known adapters keyed by target id. New adapters slot in here

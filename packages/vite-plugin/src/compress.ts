@@ -11,9 +11,9 @@
  *   wastes CPU and often *grows* the payload due to dictionary headers.
  * - Skips already-compressed formats (.png/.jpg/.woff2/.gz/.br/.zip).
  */
-import {readFile, readdir, stat, writeFile} from 'node:fs/promises';
+import {readdir, readFile, stat, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import {constants, brotliCompressSync, gzipSync} from 'node:zlib';
+import {brotliCompressSync, constants, gzipSync} from 'node:zlib';
 import type {Plugin} from 'vite';
 
 export interface CompressOptions {

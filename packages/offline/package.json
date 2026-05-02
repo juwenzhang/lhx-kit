@@ -2,7 +2,15 @@
   "name": "@lhx-kit/offline",
   "version": "0.0.2",
   "description": "Offline packaging pipeline: whitelist filter, sha256 manifest, AdmZip packer, HTML CDN URL strip, and inspect tools.",
-  "keywords": ["lhx-kit", "offline", "hybrid", "webview", "manifest", "zip", "prefetch"],
+  "keywords": [
+    "lhx-kit",
+    "offline",
+    "hybrid",
+    "webview",
+    "manifest",
+    "zip",
+    "prefetch"
+  ],
   "license": "MIT",
   "author": "luhanxin",
   "repository": {
@@ -23,7 +31,15 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public",

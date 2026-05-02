@@ -2,7 +2,17 @@
   "name": "@lhx-kit/vite-plugin",
   "version": "0.0.2",
   "description": "Vite plugin that translates project.config.ts into MPA build/dev configuration: chunk family grouping, CDN import rewriting, per-page output, local vendor fallback, and predefined gzip + brotli compression.",
-  "keywords": ["lhx-kit", "vite", "vite-plugin", "mpa", "rollup", "cdn", "brotli", "gzip", "manualchunks"],
+  "keywords": [
+    "lhx-kit",
+    "vite",
+    "vite-plugin",
+    "mpa",
+    "rollup",
+    "cdn",
+    "brotli",
+    "gzip",
+    "manualchunks"
+  ],
   "license": "MIT",
   "author": "luhanxin",
   "repository": {
@@ -23,7 +33,15 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public",

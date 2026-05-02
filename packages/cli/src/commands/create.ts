@@ -6,12 +6,12 @@ import {bold, dim} from 'kolorist';
 import prompts from 'prompts';
 import type {CliContext} from '../context';
 import {
-  type TemplateManifest,
-  type TemplateVariables,
   copyTemplateDir,
   listBuiltinTemplates,
   readTemplateSource,
-  renderString
+  renderString,
+  type TemplateManifest,
+  type TemplateVariables
 } from '../templates';
 import {info, section, success, warn} from '../ui';
 
