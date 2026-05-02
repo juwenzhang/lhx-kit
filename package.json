@@ -54,7 +54,7 @@
     "changeset:add": "changeset add",
     "changeset:status": "changeset status --verbose",
     "version": "changeset version && pnpm install --lockfile-only",
-    "release": "pnpm -r --filter './packages/*' build && changeset publish",
+    "release": "pnpm -r --filter './packages/*' build && changeset publish --access public",
     "release:dry": "pnpm -r --if-present publish --dry-run --access public",
     "release:snapshot": "changeset version --snapshot canary && changeset publish --tag canary --no-git-tag"
   },

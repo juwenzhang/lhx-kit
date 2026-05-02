@@ -14,7 +14,7 @@
   "author": "luhanxin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "url": "git+https://github.com/juwenzhang/lhx-kit.git",
     "directory": "packages/config"
   },
   "homepage": "https://juwenzhang.github.io/lhx-kit/",
