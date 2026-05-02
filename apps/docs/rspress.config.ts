@@ -70,7 +70,8 @@ export default defineConfig({
           collapsed: false,
           items: [
             {text: '快速开始', link: '/guide/getting-started'},
-            {text: '架构总览', link: '/guide/architecture'}
+            {text: '架构总览', link: '/guide/architecture'},
+            {text: '🛠️ 完整搭建流程（从零到发布）', link: '/guide/project-walkthrough'}
           ]
         },
         {
