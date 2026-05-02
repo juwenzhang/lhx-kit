@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/renderer",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "JSON config-driven renderer with Vue3 and React bindings. Walker / merge / variant / CSP-safe expression eval + lazy zod validation.",
   "keywords": [
     "lhx-kit",

@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/vite-plugin",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "Vite plugin that translates project.config.ts into MPA build/dev configuration: chunk family grouping, CDN import rewriting, per-page output, local vendor fallback, and predefined gzip + brotli compression.",
   "keywords": [
     "lhx-kit",

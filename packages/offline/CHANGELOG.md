@@ -1,5 +1,7 @@
 # @lhx-kit/offline
 
+## 1.0.0
+
 ## 0.0.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/runtime",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "Browser runtime toolkit: request, env, mobile (rem adaptation), logger, bridge, auth, mock, experiment, theme, cdn-loader.",
   "keywords": [
     "lhx-kit",
