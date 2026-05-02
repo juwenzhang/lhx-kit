@@ -87,7 +87,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [18, 20, 22]
+        # examples/* 的 engines.node 要求 >= 20，所以这里只测 20 / 22。
+        # packages/* 本身兼容更老的 Node，如需验证可以单独加一个 job。
+        node: [20, 22]
     steps:
       - uses: actions/checkout@v4
 
@@ -104,7 +106,16 @@ jobs:
         run: pnpm install --frozen-lockfile=false
 
       - name: Build internal packages
+        # 必须先把 packages/cli 等内部包的 dist 产出，下面的 examples
+        # 脚本才能找到 `lhx-cli` 这个 bin。
         run: pnpm --filter './packages/*' --if-present build
+
+      - name: Rebuild pnpm bin shims
+        # 关键：packages/cli 的 bin 指向 dist/bin.js。install 时 dist 还
+        # 不存在，pnpm 虽然建了 .bin/lhx-cli 的 symlink 但目标文件不存
+        # 在；build 产出 dist 后不会自动重建 shim。这里显式 rebuild 一
+        # 下，让 examples/* 里的 `lhx-cli build` 能找到可执行文件。
+        run: pnpm install --frozen-lockfile=false
 
       - name: Typecheck all workspaces
         run: pnpm -r --if-present --parallel typecheck
