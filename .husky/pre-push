@@ -1,10 +1,22 @@
 #!/usr/bin/env sh
-# 推送前：跑 typecheck，防止 CI 红灯浪费时间。
-# 耗时：约 10–30s（所有包串行 tsc --noEmit）。
+# 推送前：本地完整复现 CI 的质量门（lint + typecheck），防止 CI 红灯浪费时间。
+# 耗时：约 10–30s（biome ~1s、所有包串行 tsc --noEmit ~10-20s）。
 # 嫌慢：可以改成只对 changed 包跑 typecheck。
+#
+# 为什么 push 前才做而不是 commit 时：
+#   - commit 时由 lint-staged 做增量检查（快，~2s）
+#   - push 前做一次全仓扫描，捕获"局部 commit 单独看正常、组合起来
+#     有类型 / lint 问题"的情况，以及 Release workflow 里 changesets
+#     action 做二级 commit 时必须保证全仓 biome 干净（2026-05-02 的
+#     Release workflow 挂掉就是全仓 biome 没过）
 #
 # 逃生舱：
 #   git push --no-verify   （应急使用）
+
+set -e
+
+echo "🎨 pre-push: biome check across the repo..."
+pnpm exec biome check .
 
 echo "🔍 pre-push: running typecheck across all workspaces..."
 pnpm -r --if-present --parallel typecheck

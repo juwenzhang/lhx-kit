@@ -41,7 +41,12 @@ jobs:
           cache: pnpm
 
       - name: Install
-        run: pnpm install --frozen-lockfile=false
+        # CI 必须严格 frozen：让 lockfile 成为唯一事实来源。
+        # 前提是 `package.json#pnpm.supportedArchitectures` 已声明所有
+        # 目标平台（见根 package.json），保证 lockfile 包含 linux-x64 的
+        # 原生二进制（biome、esbuild、swc 等）。2026-05-02 的 Release
+        # workflow 崩溃就是因为 lockfile 漏了 @biomejs/cli-linux-x64。
+        run: pnpm install --frozen-lockfile
 
       - name: Biome check
         run: pnpm exec biome check .
@@ -69,7 +74,7 @@ jobs:
           cache: pnpm
 
       - name: Install
-        run: pnpm install --frozen-lockfile=false
+        run: pnpm install --frozen-lockfile
 
       - name: Validate commits
         run: |
@@ -103,7 +108,7 @@ jobs:
           cache: pnpm
 
       - name: Install
-        run: pnpm install --frozen-lockfile=false
+        run: pnpm install --frozen-lockfile
 
       - name: Build internal packages
         # 必须先把 packages/cli 等内部包的 dist 产出，下面的 examples
@@ -115,7 +120,8 @@ jobs:
         # 不存在，pnpm 虽然建了 .bin/lhx-cli 的 symlink 但目标文件不存
         # 在；build 产出 dist 后不会自动重建 shim。这里显式 rebuild 一
         # 下，让 examples/* 里的 `lhx-cli build` 能找到可执行文件。
-        run: pnpm install --frozen-lockfile=false
+        # 用 `--offline` 避免重新解析网络；lockfile 没变只是补 symlink。
+        run: pnpm install --offline
 
       - name: Typecheck all workspaces
         run: pnpm -r --if-present --parallel typecheck
@@ -142,5 +148,5 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter '@lhx-kit/*' build

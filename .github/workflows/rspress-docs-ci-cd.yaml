@@ -53,7 +53,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Install
-        run: pnpm install --frozen-lockfile=false
+        run: pnpm install --frozen-lockfile
 
       - name: Build internal packages
         # 文档站不依赖内部包，但其他页面可能引用；保险起见一次 build
