@@ -28,9 +28,23 @@ function printInspection(target: string, result: InspectionResult): void {
   info(`target: ${target}`);
   info(`valid: ${result.valid ? 'yes' : 'no'}`);
   info(`pages: ${result.pageCount}, assets: ${result.assetCount}, size: ${formatBytes(result.totalSize)}`);
+  if (result.packageHash) {
+    // Print a short prefix so CI logs stay readable; the full hash is
+    // still available in manifest.json for ops platforms that need it.
+    const short = result.packageHash.slice(0, 12);
+    const pkgSize = typeof result.packageSize === 'number' ? formatBytes(result.packageSize) : '?';
+    info(`package hash: sha256:${short}… (${pkgSize})`);
+  }
   if (result.largeAssets.length) {
     info('top assets:');
     for (const asset of result.largeAssets) info(`  - ${asset.path} ${formatBytes(asset.size)}`);
+  }
+  if (result.warnings && result.warnings.length) {
+    // Heuristic warnings (e.g. "page has no .js chunk") are printed but do
+    // NOT flip `valid`. Callers that want CI to fail on warnings can wire
+    // a `--strict` flag on top of this output in the future.
+    warn(`warnings: ${result.warnings.length}`);
+    for (const w of result.warnings.slice(0, 10)) warn(`  - ${w}`);
   }
   if (result.missingFiles.length) {
     warn(`missing files: ${result.missingFiles.length}`);

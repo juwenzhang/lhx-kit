@@ -147,7 +147,15 @@ export function deriveOfflineConfig(
     // `excludeFilenames` / `excludePaths` (future – not wired through yet).
     sharedDir: 'shared',
     excludeFilenames: ['mockServiceWorker.js'],
-    excludePaths: []
+    excludePaths: [],
+    // IO concurrency knobs — keep in sync with @lhx-kit/offline's schema
+    // defaults. We fill them explicitly here because the CLI bypasses
+    // `normalizeOfflineConfig` (which would have applied these defaults),
+    // constructing the OfflineConfig shape directly from project + offline
+    // user configs. 0.0.3 added these as required fields on the resolved
+    // OfflineConfig type.
+    hashConcurrency: 8,
+    copyConcurrency: 16
   };
 
   return {config, resolvedHybridType, buildDirAbs, outDirAbs};
