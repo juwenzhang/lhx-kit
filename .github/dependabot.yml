@@ -1,6 +1,21 @@
 version: 2
+
+# Dependabot policy — "batch everything, review weekly".
+#
+# Design goals:
+#   • At most 1 open PR per ecosystem at any time (reduces noise).
+#   • All bumps (patch / minor / major) are grouped into ONE PR per
+#     ecosystem so the reviewer sees the whole picture in one place.
+#   • Security advisories still open standalone PRs (Dependabot ignores
+#     grouping / limit for security updates — that's a feature, keep it).
+#
+# If you want stricter behaviour (e.g. separate major-version PRs), move
+# majors out of the group via `exclude-patterns` + a second group.
+
 updates:
-  # npm 依赖（根级）
+  # ────────────────────────────────────────────────────────────────
+  # npm dependencies across the monorepo (root + workspaces)
+  # ────────────────────────────────────────────────────────────────
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
@@ -8,29 +23,37 @@ updates:
       day: 'monday'
       time: '09:00'
       timezone: 'Asia/Shanghai'
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 1
     groups:
-      # minor + patch 合并成一个 PR，减少噪音
-      minor-and-patch:
+      all-npm:
+        applies-to: version-updates
         patterns: ['*']
-        update-types:
-          - 'minor'
-          - 'patch'
+        # include every update-type so one PR carries patch + minor + major
+        update-types: ['patch', 'minor', 'major']
     commit-message:
       prefix: 'chore(deps)'
       include: 'scope'
     labels:
       - 'dependencies'
-    ignore:
-      # lockfile-only 更新由 pnpm 自己管
-      - dependency-name: '*'
-        update-types: ['version-update:semver-major']
+    # We intentionally do NOT ignore majors here — they're in the group
+    # and a human can cherry-pick / split them during review.
 
-  # GitHub Actions
+  # ────────────────────────────────────────────────────────────────
+  # GitHub Actions used by workflows
+  # ────────────────────────────────────────────────────────────────
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Shanghai'
+    open-pull-requests-limit: 1
+    groups:
+      all-actions:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: ['patch', 'minor', 'major']
     commit-message:
       prefix: 'chore(ci)'
     labels:
