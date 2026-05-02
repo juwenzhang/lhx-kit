@@ -303,6 +303,90 @@ if: >-
 
 ---
 
+## 🎨 落地配套：仓库 Labels 规划与批量创建
+
+3 个 AI workflow 会大量 read/write 仓库 labels。workflow 本身不需要 label 预先存在（GitHub API 对不存在的 label 会自动创建），但**提前建好有两个好处**：
+
+1. **颜色一致**——自动创建的是随机灰色，逐个改颜色很累
+2. **语义分层**——给维护者快速识别"哪些 label 是给人打的、哪些是 AI 打的"
+
+### 📋 推荐的 label 矩阵
+
+lhx-kit 目前用以下 3 类 22 个 label（比默认多 13 个）：
+
+| 类别 | Labels | 颜色 | 用途 |
+|---|---|---|---|
+| GitHub 默认（9 个）| bug / documentation / duplicate / enhancement / good first issue / help wanted / invalid / question / wontfix | 默认 | 新建仓库自带 |
+| AI 相关（3 个）| `ai-summary` | 紫 `#8957e5` | 打上触发 summarize workflow |
+| | `ai-triaged` | 紫 `#5319e7` | ai-triage 运行完会盖这个章 |
+| | `needs-reproduction` | 黄 `#fbca04` | body 太短时 ai-triage 自动打 |
+| 包 scope（8 个）| `cli` `config` `offline` `renderer` `runtime` `skills` `tsconfig` `vite-plugin` | 浅蓝 `#c5def5` | issue 影响到的具体包，ai-triage 按 scope 自动打 |
+| 其他 scope（2 个）| `docs` | 深蓝 `#1d76db` | apps/docs 文档站 |
+| | `engineering` | 绿 `#0e8a16` | CI / release / tooling |
+
+### 🛠️ 用 `gh` CLI 一次性批量创建
+
+**前置：先登录 gh**（这是独立的 OAuth，不复用你已有的 git SSH key）：
+
+```bash
+gh auth login -h github.com
+# 按顺序回答:
+#   1. What is your preferred protocol for Git operations? → HTTPS
+#      （必须选 HTTPS；gh 本身是 REST API 客户端，选 SSH 会导致后续 API
+#       调用找不到凭据。你现有 git remote 走 SSH 完全不受影响，两条路径独立）
+#   2. Authenticate Git with your GitHub credentials? → Yes
+#   3. How would you like to authenticate GitHub CLI? → Login with a web browser
+#
+# 然后会显示一个 8 位一次性 code（形如 F515-F4FD），复制它，
+# 浏览器会自动打开 github.com/login/device，粘贴 code → 授权即可。
+```
+
+如果中途网络抖动看到 `failed to authenticate via web browser: Post "..." EOF`，**别慌，检查一下之前有没有已经出现 `✓ Authentication complete.` / `✓ Logged in as xxx`**——出现过就是成功了，后面那次失败只是重复尝试被打断。用 `gh auth status` 验证：
+
+```bash
+$ gh auth status
+github.com
+  ✓ Logged in to github.com account juwenzhang (keyring)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: gho_************************************
+  - Token scopes: 'gist', 'read:org', 'repo'
+```
+
+**然后在仓库根目录批量建 label**：
+
+```bash
+cd /path/to/lhx-kit  # 必须在仓库目录下，gh 靠 remote 识别仓库
+
+# ① AI 相关（3 个）
+gh label create ai-summary         --color 8957e5 --description "Trigger AI to summarize the thread" --force
+gh label create ai-triaged         --color 5319e7 --description "Auto-triaged by AI bot" --force
+gh label create needs-reproduction --color fbca04 --description "Missing or incomplete reproduction steps" --force
+
+# ② 包 scope（8 个，统一浅蓝 c5def5）
+for p in cli config offline renderer runtime skills tsconfig vite-plugin; do
+  gh label create "$p" --color c5def5 --description "Scope: @lhx-kit/$p" --force
+done
+
+# ③ 其他 scope（2 个）
+gh label create docs        --color 1d76db --description "Scope: documentation site (apps/docs)" --force
+gh label create engineering --color 0e8a16 --description "Scope: CI / release / tooling" --force
+
+# 验证
+gh label list --limit 100 --json name | jq '.[].name' | sort
+# 期望看到 22 个名字
+```
+
+`--force` 的作用：如果 label 已存在，**PATCH 更新颜色/描述而不是报错**。脚本可反复跑、幂等。
+
+### ⚠️ 踩过的坑
+
+- **串行 `&&` vs 分号 `;`**：用 `cmd1 && cmd2 && ...` 串联时，任何一个失败会中断后续命令。建 label 这种每个都要跑的场景建议用 `for` 循环或分号串联，**不要 `&&`**。
+- **Watch 命令超时截断**：某些终端复用工具（如 `tmux`）或 IDE 集成终端会对长时间的批量命令有 watch 超时逻辑，**把所有 label 放一个命令行里可能被截断**。建议分段跑，每次 8~10 个 label。
+- **`gh` 要在 git 仓库根目录跑**：`gh label create` 不接收 `--repo` 时，靠 `git remote get-url origin` 反推仓库。不在仓库目录下会报错。
+
+---
+
 ## 🚀 路径地图：轻量做完之后怎么升级
 
 | 阶段 | 方案 | 能力 |
