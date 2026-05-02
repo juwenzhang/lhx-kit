@@ -32,6 +32,14 @@
   // ──────────────────────────────────────────────────────
   //  Biome（覆盖默认 prettier/eslint 行为）
   // ──────────────────────────────────────────────────────
+  // Force the Biome VSCode extension to use the workspace-installed
+  // biome binary (currently 2.4.x via packageManager), instead of its
+  // bundled copy. Without this the extension often ships an older
+  // major (e.g. 1.9.x) and flags valid biome 2 keys like `includes`
+  // and `assist` as "unknown key" — even though CI and the terminal
+  // happily accept the same file.
+  "biome.lspBin": "node_modules/@biomejs/biome/bin/biome",
+  "biome.runtime": "node",
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
