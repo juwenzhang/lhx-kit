@@ -23,10 +23,22 @@ name: Release
 #   - No accidental publish from an unrelated master push.
 #   - Rollback = revert the Version Packages PR.
 #
+# Auth to npm: Trusted Publishing via GitHub OIDC.
+#   - NO NPM_TOKEN secret is needed. npm exchanges this job's OIDC id_token
+#     (issued because `permissions.id-token: write` is set below) for a
+#     short-lived publish credential.
+#   - Prerequisite: each @lhx-kit/* package has a Trusted Publisher
+#     configured on npmjs.com pointing at:
+#       org/user = juwenzhang, repo = lhx-kit,
+#       workflow filename = release.yaml, environment = (empty)
+#     See .github/SETUP.md for the one-time setup steps.
+#   - Provenance is still produced automatically (id-token + OIDC = signed).
+#
 # Required repository secrets:
-#   - NPM_TOKEN       — an automation token from npmjs.com with publish scope
 #   - GITHUB_TOKEN    — auto-provided by GitHub; needs contents:write + pull-requests:write
 #                       (set in permissions below)
+#   - REPO_PUSH_TOKEN — optional PAT to push the Version Packages PR onto
+#                       protected branches; falls back to GITHUB_TOKEN.
 
 on:
   push:
@@ -98,9 +110,9 @@ jobs:
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # Enables npm provenance attestations (proves the package was
-          # built on GitHub Actions from this repo at this commit).
+          # No NPM_TOKEN — Trusted Publishing (OIDC) is used instead.
+          # Provenance is implicit when publishing via OIDC; keeping the
+          # explicit flag makes intent obvious and is a no-op duplicate.
           NPM_CONFIG_PROVENANCE: "true"
 
       - name: Summary

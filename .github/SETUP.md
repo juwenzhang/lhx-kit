@@ -20,20 +20,44 @@ git push -u origin master
 Without at least one commit on `master`, `changesets` cannot compute diffs
 and the release workflow will error on first run.
 
-### 2. NPM_TOKEN (publish secret)
+### 2. Trusted Publishing (npm, OIDC) — no token required
+
+We publish to npm via **Trusted Publishing** (GitHub OIDC → npm). No
+`NPM_TOKEN` secret needs to exist in the repo; the Release job exchanges
+GitHub's short-lived OIDC id_token (granted by `id-token: write` in
+`release.yaml`) for a one-shot publish credential.
+
+One-time setup (per package, done on npmjs.com):
 
 1. Log in to [npmjs.com](https://www.npmjs.com) with the account that
    owns the `@lhx-kit` scope.
-2. Profile avatar → **Access Tokens** → **Generate New Token**.
-3. Choose **Classic Token** → **Automation**.
-4. Copy the token — it is shown only once.
-5. GitHub repo → **Settings** → **Secrets and variables** → **Actions**
-   → **New repository secret**.
-   - **Name**: `NPM_TOKEN`
-   - **Value**: paste the token.
+2. Open each package page, e.g.
+   `https://www.npmjs.com/package/@lhx-kit/cli/access`
+3. Under **Trusted Publisher** → **Add trusted publisher** → **GitHub
+   Actions**, fill:
+   - **Organization or user**: `juwenzhang`
+   - **Repository**: `lhx-kit`
+   - **Workflow filename**: `release.yaml` (filename only, no path)
+   - **Environment name**: *(leave empty)*
+4. Repeat for every `@lhx-kit/*` package that is (or will be) public.
 
-> 💡 "Automation" scope bypasses the 2FA prompt needed by CI while
-> keeping the blast radius small (it cannot sign in to the npm website).
+Packages we publish today: `cli`, `config`, `offline`, `renderer`,
+`runtime`, `skills`, `tsconfig`, `vite-plugin`.
+
+Notes:
+- Trusted Publishing requires the package to exist on npm already. The
+  **first** publish of a brand-new package must still be done manually
+  (e.g. `npm publish --access public` from a logged-in machine).
+- `npm provenance` is produced automatically when publishing via OIDC.
+- If you ever need to roll back to token-based auth, set a `NPM_TOKEN`
+  secret and add `NPM_TOKEN: ${{ secrets.NPM_TOKEN }}` back under the
+  Changesets step's `env:` block. npm accepts either, so the switch is
+  non-destructive.
+
+> ⚠️ **Do NOT** create Granular / Automation tokens for CI. npm now
+> actively discourages them (the token creation page itself warns:
+> *"For automation or CI/CD uses, please use Trusted Publishing
+> instead."*).
 
 ### 3. Allow GitHub Actions to open PRs
 
@@ -190,7 +214,8 @@ git push
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
 | `403 Resource not accessible by integration` during release | Workflow permissions not enabled | Do (3) |
-| `ENEEDAUTH` during `changeset publish` | `NPM_TOKEN` missing / wrong scope | Re-do (2) with **Automation** token |
+| `ENEEDAUTH` / `E404 scope not found` during `changeset publish` | Trusted Publisher not configured for that package, OR the package has never been published manually yet | Re-do (2). First publish of a brand-new package must be done manually (`npm publish --access public`). |
+| `OIDC token exchange failed` during publish | `permissions.id-token: write` missing in `release.yaml` or Trusted Publisher metadata doesn't match (wrong workflow filename / repo name) | Re-check step (2) — workflow filename must be `release.yaml`, repo must be `juwenzhang/lhx-kit` |
 | Version Packages PR doesn't open | No pending changeset files committed | `pnpm changeset` + commit |
 | Docs site 404s after deploy | Pages source not set to "GitHub Actions" | Do (4) |
 | `Failed to find where HEAD diverged from "master"` | master has no commits yet | Do (1) |
