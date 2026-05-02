@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "name": "profile",
+  "components": [
+    {
+      "name": "Heading",
+      "id": "profile-title",
+      "props": {"level": 1, "text": "User profile (React)"}
+    },
+    {
+      "name": "Card",
+      "id": "basic",
+      "props": {"title": "Basic info"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": {"$": "state.user.name"}}},
+        {"name": "Paragraph", "props": {"text": {"$": "state.user.level"}}}
+      ]
+    },
+    {
+      "name": "Card",
+      "id": "skills",
+      "props": {"title": "Skills"},
+      "children": [
+        {
+          "name": "Paragraph",
+          "for": {"in": {"$": "state.user.skills"}, "as": "skill"},
+          "props": {"text": {"$": "skill.name"}}
+        }
+      ]
+    },
+    {
+      "name": "Card",
+      "id": "vip-only",
+      "when": {"eq": [{"$": "flags.isVip"}, true]},
+      "props": {"title": "VIP privileges"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "Append ?vip=1 in the URL to reveal this card."}}
+      ]
+    }
+  ]
+}

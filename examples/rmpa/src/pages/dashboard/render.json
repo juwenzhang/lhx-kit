@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "dashboard",
+  "components": [
+    {
+      "name": "Heading",
+      "id": "page-title",
+      "props": {"level": 1, "text": {"$": "state.greeting"}}
+    },
+    {
+      "name": "Card",
+      "id": "intro",
+      "props": {"title": "Hello"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "This page is rendered from render.json by @lhx-kit/renderer."}},
+        {"name": "Paragraph", "props": {"text": "Edit src/pages/dashboard/render.json and refresh to see the change."}}
+      ]
+    },
+    {
+      "name": "Card",
+      "id": "promo",
+      "when": {"eq": [{"$": "flags.showPromo"}, true]},
+      "props": {"title": "Promo"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "Append ?promo=1 to reveal this card."}}
+      ]
+    }
+  ]
+}

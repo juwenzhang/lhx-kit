@@ -1,0 +1,48 @@
+/**
+ * Minimal CSS reset for the rem-adaptive H5 layout.
+ *
+ * Why this file exists:
+ *   `postcss-pxtorem` only converts `px` that you write in your own source
+ *   files. Browser User-Agent defaults (e.g. `h1 { font-size: 2em }`) are
+ *   NOT touched by PostCSS, so when `setupMobile` pumps the root font-size
+ *   up to ~41.4px on a 414-wide viewport, every `<h1>`/`<h2>`/`<p>` balloons.
+ *
+ * The fix: pin heading/body text to explicit `px` values that ARE run through
+ * pxtorem. After transformation:
+ *   28px → 0.37333rem → 0.37333 * (clientWidth/10) px
+ *   i.e. on a 750 design canvas these renders pixel-perfectly 1:1.
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft Yahei',
+    sans-serif;
+  /* 28px on a 750 design canvas = 14px rendered on a 375 phone */
+  font-size: 28px;
+  line-height: 1.5;
+  color: #333;
+  background: #f7f7f7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reset UA-defined headings to explicit px that pxtorem will transform. */
+h1 { font-size: 48px; font-weight: 600; margin: 0 0 24px; }
+h2 { font-size: 36px; font-weight: 600; margin: 0 0 20px; }
+h3 { font-size: 32px; font-weight: 600; margin: 0 0 16px; }
+h4 { font-size: 28px; font-weight: 600; margin: 0 0 12px; }
+p  { font-size: 28px; margin: 0 0 16px; }
+
+a  { color: #1677ff; text-decoration: none; }
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 28px;
+}
+
+* { box-sizing: border-box; }
+
+img, svg, video { max-width: 100%; display: block; }
+
+/* Hairline border helper, set by `setupMobile`'s detectHairlines feature. */
+.hairlines .hairline { border-width: 0.5px; }

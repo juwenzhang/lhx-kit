@@ -1,0 +1,13 @@
+node_modules
+dist
+.lhx-kit
+.git
+.github
+.vscode
+.idea
+coverage
+playwright-report
+test-results
+*.log
+.env.local
+.env.*.local

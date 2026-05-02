@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "name": "home",
+  "components": [
+    {
+      "name": "Heading",
+      "id": "page-title",
+      "props": {"level": 1, "text": "Hello, lhx-kit renderer"}
+    },
+    {
+      "name": "Card",
+      "id": "intro",
+      "props": {"title": "Intro"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "This page is rendered from JSON."}}
+      ]
+    },
+    {
+      "name": "Card",
+      "id": "loop-card",
+      "props": {"title": "List"},
+      "children": [
+        {
+          "name": "Paragraph",
+          "for": {"in": {"$": "state.items"}, "as": "item"},
+          "props": {"text": {"$": "item.label"}}
+        }
+      ]
+    },
+    {
+      "name": "Card",
+      "id": "review-only",
+      "when": {"eq": [{"$": "flags.isReview"}, true]},
+      "props": {"title": "Review-only"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "Visible only when flags.isReview === true."}}
+      ]
+    }
+  ]
+}

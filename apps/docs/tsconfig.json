@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@lhx-kit/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["docs/*"]
+    }
+  },
+  "include": ["rspress.config.ts", "docs/**/*.ts", "docs/**/*.tsx"],
+  "exclude": ["doc_build", "node_modules"]
+}

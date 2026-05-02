@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "name": "home",
+  "components": [
+    {
+      "name": "Heading",
+      "id": "page-title",
+      "props": {"level": 1, "text": {"$": "state.greeting"}}
+    },
+    {
+      "name": "Card",
+      "id": "intro",
+      "props": {"title": "Hello"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "This page is rendered from a JSON schema by @lhx-kit/renderer."}},
+        {"name": "Paragraph", "props": {"text": "Edit src/pages/home/render.json and refresh to see the change."}}
+      ]
+    },
+    {
+      "name": "Card",
+      "id": "promo",
+      "when": {"eq": [{"$": "flags.showPromo"}, true]},
+      "props": {"title": "Promo"},
+      "children": [
+        {"name": "Paragraph", "props": {"text": "Append ?promo=1 in the URL to reveal this card."}}
+      ]
+    }
+  ]
+}

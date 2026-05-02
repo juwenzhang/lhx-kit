@@ -1,0 +1,23 @@
+import type {ReactElement} from 'react';
+import {createRoot} from 'react-dom/client';
+import {bootstrap} from '@/bootstrap';
+
+/**
+ * The `settings` entry does not need an in-page router. A single root
+ * component is enough. Add a router (mirroring src/pages/home/router.tsx)
+ * if secondary navigation is needed later.
+ */
+function SettingsPage(): ReactElement {
+  return (
+    <section className="page-settings">
+      <h1>RMPA Demo - Settings</h1>
+      <p>This page is intentionally simple — no in-page router, no renderer.</p>
+      <p>Run <code>lhx-cli add page &lt;name&gt;</code> to scaffold more MPA entries.</p>
+    </section>
+  );
+}
+
+void bootstrap().then(() => {
+  const root = document.getElementById('app');
+  if (root) createRoot(root).render(<SettingsPage />);
+});

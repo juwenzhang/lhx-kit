@@ -1,0 +1,19 @@
+{
+  "name": "@lhx-kit/example-config-demo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Minimal example that exercises @lhx-kit/config + @lhx-kit/vite-plugin end-to-end.",
+  "type": "module",
+  "scripts": {
+    "start": "node ./index.mjs",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@lhx-kit/config": "workspace:*",
+    "@lhx-kit/vite-plugin": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}
