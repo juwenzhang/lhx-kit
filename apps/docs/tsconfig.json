@@ -5,9 +5,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["docs/*"]
+      "@/*": ["./docs/*"]
     }
   },
   "include": ["rspress.config.ts", "docs/**/*.ts", "docs/**/*.tsx"],

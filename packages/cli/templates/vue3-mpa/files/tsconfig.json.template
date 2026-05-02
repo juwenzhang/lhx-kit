@@ -2,11 +2,10 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@lhx-kit/tsconfig/app-vue.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@pages/*": ["src/pages/*"],
-      "@components/*": ["src/components/*"]
+      "@/*": ["./src/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@components/*": ["./src/components/*"]
     }
   },
   "include": [

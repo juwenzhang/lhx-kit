@@ -24,6 +24,7 @@
     "declarationMap": true,
     "sourceMap": true,
 
-    "types": ["node"]
+    "types": ["node"],
+    "ignoreDeprecations": "5.0"
   }
 }
