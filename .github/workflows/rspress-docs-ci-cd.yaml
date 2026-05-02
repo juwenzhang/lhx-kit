@@ -45,6 +45,12 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Auto-enable Pages + switch source to "GitHub Actions" if it
+          # wasn't configured yet. Requires the workflow to have write
+          # access (see top-level `permissions: pages: write`), which
+          # Settings → Actions → General must also allow.
+          enablement: true
 
       - name: Install
         run: pnpm install --frozen-lockfile=false
