@@ -19,9 +19,22 @@ import {
   renderCdnScriptTags
 } from '@lhx-kit/runtime/cdn-loader';
 import type {Plugin, UserConfig} from 'vite';
+import * as viteExports from 'vite';
 import {type CompressOptions, lhxCompress} from './compress';
 import {type HtmlCdnInjection, renderPageHtml, rewriteModuleScriptWithCdnGate} from './html';
 import {RESOLVED_VIRTUAL_ID, renderVirtualModuleCode, serializeConfig, VIRTUAL_ID} from './virtual';
+
+/**
+ * Runtime detection: is Vite running on Rolldown?
+ *
+ * Vite 8+ exposes `rolldownVersion` as a top-level named export when the
+ * underlying bundler is Rolldown; on Rollup-backed versions (Vite 5/6/7)
+ * the export is absent. We keep the check defensive so old Vite versions
+ * still work (optional chaining + `any` cast — the type only exists on
+ * the Vite 8+ typings).
+ */
+// biome-ignore lint/suspicious/noExplicitAny: probe an optional export without failing on old typings
+const IS_ROLLDOWN = Boolean((viteExports as any).rolldownVersion);
 
 /**
  * Built-in defaults. Every value is overridable via `LhxKitPluginOptions`.
@@ -350,11 +363,15 @@ function buildHtmlCdnPayload(cdn: CdnContext): HtmlCdnInjection {
  */
 function reportOversizedChunks(bundle: Record<string, unknown>, softLimitBytes: number): void {
   const offenders: {fileName: string; size: number}[] = [];
-  for (const [fileName, asset] of Object.entries(bundle)) {
-    const a = asset as {type?: string; code?: string};
-    if (a.type !== 'chunk' || typeof a.code !== 'string') continue;
+  // Read each chunk's `fileName` rather than the bundle map's key so the
+  // warning prints the post-relocation path (home/assets/home-xxx.js) rather
+  // than the pre-relocation one (assets/home-xxx.js). Under Rolldown the
+  // key is never updated; under Rollup both match.
+  for (const asset of Object.values(bundle)) {
+    const a = asset as {type?: string; code?: string; fileName?: string};
+    if (a.type !== 'chunk' || typeof a.code !== 'string' || !a.fileName) continue;
     const size = Buffer.byteLength(a.code, 'utf8');
-    if (size > softLimitBytes) offenders.push({fileName, size});
+    if (size > softLimitBytes) offenders.push({fileName: a.fileName, size});
   }
   if (offenders.length === 0) return;
   offenders.sort((a, b) => b.size - a.size);
@@ -733,6 +750,20 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
           // tuple-output quirks) even though the runtime still accepts the
           // Rollup-style object unchanged. Cast once here so we keep the
           // readable Rollup API above without chasing a moving target type.
+          //
+          // Small-chunk merging:
+          //   Rollup  : `output.experimentalMinChunkSize` — merges any
+          //             sub-threshold chunk into its static importer.
+          //   Rolldown: the equivalent lives under `output.codeSplitting`,
+          //             BUT Rolldown makes `manualChunks` and
+          //             `codeSplitting` mutually exclusive and refuses
+          //             to act on `codeSplitting.minSize` unless `groups`
+          //             are also supplied. Rewriting our 200+ line
+          //             `nodeModulesPerPackageChunker` as `groups` rules
+          //             is deferred work — see openspec/changes. For now
+          //             we keep `manualChunks` (vendor-per-package is far
+          //             more important for caching than the 10 KB merge)
+          //             and drop the min-chunk-size hint on Rolldown.
           rollupOptions: {
             input,
             ...(c.cdn.active
@@ -746,34 +777,43 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
                     // chunks closer to the 50KB sweet spot for HTTP/2 multi-
                     // plexing. Page-level chunks of user code stay together.
                     manualChunks: nodeModulesPerPackageChunker,
-                    // Merge any chunk below the threshold into its static
-                    // importer. Rollup only considers this for chunks that
-                    // are safe to inline (no cycles, single importer). Sub-
-                    // 10KB chunks are dominated by HTTP request overhead —
-                    // TCP+TLS+HTTP/2 framing is ~1–2 round-trips regardless
-                    // of payload, so a 0.5KB chunk costs the same as a 10KB
-                    // one. This auto-folds tiny route views / helper chunks
-                    // without us having to hand-tune per-project.
-                    experimentalMinChunkSize: 10 * 1024
+                    // Rollup-only: Rolldown ignores this (and warns) when
+                    // `manualChunks` is present, so we skip emitting it.
+                    ...(IS_ROLLDOWN ? {} : {experimentalMinChunkSize: 10 * 1024})
                   }
                 }
               : {
                   output: {
                     manualChunks: nodeModulesPerPackageChunker,
-                    experimentalMinChunkSize: 10 * 1024
+                    ...(IS_ROLLDOWN ? {} : {experimentalMinChunkSize: 10 * 1024})
                   }
                 })
             // biome-ignore lint/suspicious/noExplicitAny: see rollupOptions comment above
           } as any
         },
-        // esbuild-level options for the production minifier. `drop_console`-
-        // equivalent behaviour: strip console.log/debug calls from prod
-        // output (keeps console.warn/error for diagnostics).
-        esbuild: {
-          drop: env.command === 'build' ? ['debugger'] : undefined,
-          pure: env.command === 'build' ? ['console.log', 'console.debug', 'console.trace'] : undefined,
-          legalComments: 'none'
-        },
+        // JS minifier options. Historically under `esbuild:
+        // {drop, pure, legalComments}`. Vite 8 (Rolldown) switched to Oxc
+        // as the default minifier and deprecates the `esbuild` field — the
+        // compatibility layer still translates our options but emits
+        // `esbuild option was specified by "lhx-kit" plugin. ... use oxc
+        // instead` on every build. Emit `oxc` on Rolldown, `esbuild` on
+        // Rollup — never both.
+        ...(IS_ROLLDOWN
+          ? {
+              oxc: {
+                drop: env.command === 'build' ? ['debugger'] : undefined,
+                pure: env.command === 'build' ? ['console.log', 'console.debug', 'console.trace'] : undefined,
+                legalComments: 'none'
+                // biome-ignore lint/suspicious/noExplicitAny: `oxc` is only in Vite 8+ typings
+              } as any
+            }
+          : {
+              esbuild: {
+                drop: env.command === 'build' ? ['debugger'] : undefined,
+                pure: env.command === 'build' ? ['console.log', 'console.debug', 'console.trace'] : undefined,
+                legalComments: 'none'
+              }
+            }),
         server: c.env.proxy ? {proxy: c.env.proxy as NonNullable<UserConfig['server']>['proxy']} : undefined
       };
     },
@@ -926,11 +966,15 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
         // for a gate IIFE that awaits `window.__lhxCdn.whenReady(...)` before
         // dynamic-importing the (now-hashed) entry chunk. Done LAST so it
         // sees the final entry URL, not the source path.
+        //
+        // Iterate `bundle` values and read each asset's own `fileName`
+        // (which step 1 rewrote in place) — not the bundle map's key —
+        // because Rolldown keeps keys frozen at their original path.
         if (c.cdn.active) {
           const payload = buildHtmlCdnPayload(c.cdn);
-          for (const [fileName, asset] of Object.entries(bundle)) {
+          for (const asset of Object.values(bundle)) {
             const a = asset as {type?: string; source?: string | Uint8Array; fileName?: string};
-            if (a.type !== 'asset' || !fileName.endsWith('.html')) continue;
+            if (a.type !== 'asset' || !a.fileName || !a.fileName.endsWith('.html')) continue;
             if (typeof a.source !== 'string') continue;
             a.source = rewriteModuleScriptWithCdnGate(a.source, payload);
           }
@@ -1042,29 +1086,56 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
 
 /* -------------------- helpers -------------------- */
 
-function renameBundleEntry(bundle: Record<string, unknown>, fromName: string, toName: string, asset: unknown): void {
+/**
+ * Rename a bundle entry *in place*.
+ *
+ * We used to do `delete bundle[from]; bundle[to] = {...asset, fileName: to}`,
+ * but Rolldown (Vite 8+) rejects any assignment to the `bundle` variable with:
+ *
+ *   > This plugin assigns to bundle variable. This is discouraged by Rollup
+ *   > and is not supported by Rolldown. This will be ignored.
+ *
+ * Because the assignment is *ignored* by Rolldown, our per-page relocation
+ * was silently no-oping under Rolldown — `dist/home/index.html` vanished and
+ * the offline package ended up with only `shared/` files (see the broken
+ * manifest symptom reported on 2026-05-02).
+ *
+ * Rolldown writes each chunk/asset to disk using the object's own `fileName`
+ * field, **not** the bundle map's key (the map is just an index of `name`s).
+ * So we only mutate `fileName` on the existing object, leaving the map key
+ * untouched. This is allowed by both Rollup and Rolldown and produces the
+ * correct on-disk layout under both bundlers.
+ *
+ * Call sites that subsequently iterate `bundle` must read the current path
+ * from `asset.fileName` (not from the key) — see `patchHtmlReferences` and
+ * `patchChunkImports` below.
+ */
+function renameBundleEntry(_bundle: Record<string, unknown>, fromName: string, toName: string, asset: unknown): void {
   if (fromName === toName) return;
-  const next = {...(asset as object), fileName: toName};
-  delete bundle[fromName];
-  bundle[toName] = next;
+  (asset as {fileName: string}).fileName = toName;
 }
 
 /**
  * After relocation, HTML `source` strings may still reference chunks by their
  * old paths. Rewrite them based on the final set of chunks so that browsers
  * fetch the files from their new locations.
+ *
+ * IMPORTANT: we read each entry's *current* `fileName` (which our rename step
+ * mutated in place), not the bundle map key. Under Rolldown the key stays
+ * stuck at the original path, so iterating by key would rebuild a stale
+ * basename → path index.
  */
 function patchHtmlReferences(bundle: Record<string, unknown>): void {
   // Build reverse index: original basename → new relative path (e.g. `home/assets/home-xxx.js`).
   const chunkByBasename = new Map<string, string>();
-  for (const [fileName, asset] of Object.entries(bundle)) {
-    const a = asset as {type?: string};
-    if (a.type !== 'chunk') continue;
-    const base = fileName.split('/').pop()!;
-    chunkByBasename.set(base, fileName);
+  for (const asset of Object.values(bundle)) {
+    const a = asset as {type?: string; fileName?: string};
+    if (a.type !== 'chunk' || !a.fileName) continue;
+    const base = a.fileName.split('/').pop()!;
+    chunkByBasename.set(base, a.fileName);
   }
 
-  for (const [, asset] of Object.entries(bundle)) {
+  for (const asset of Object.values(bundle)) {
     const a = asset as {type?: string; source?: string | Uint8Array; fileName?: string};
     if (a.type !== 'asset' || !a.fileName || !a.fileName.endsWith('.html')) continue;
     if (typeof a.source !== 'string') continue;
@@ -1122,21 +1193,27 @@ function patchChunkImports(bundle: Record<string, unknown>): void {
   // Build: basename (stable, includes hash) → final absolute-from-dist path.
   // Include BOTH chunks and asset-type CSS companions so __vite__mapDeps
   // arrays (which mix .js and .css) resolve correctly.
+  //
+  // Read `asset.fileName` rather than the bundle map's key: under Rolldown
+  // our `renameBundleEntry` only updates fileName in place (the key stays at
+  // the original path), so key-based iteration gives stale paths.
   const fileByBasename = new Map<string, string>();
-  for (const [fileName, asset] of Object.entries(bundle)) {
-    const a = asset as {type?: string};
+  for (const asset of Object.values(bundle)) {
+    const a = asset as {type?: string; fileName?: string};
     if (a.type !== 'chunk' && a.type !== 'asset') continue;
-    const base = fileName.split('/').pop()!;
+    if (!a.fileName) continue;
+    const base = a.fileName.split('/').pop()!;
     // Only track files we might legitimately reference from chunk code.
     if (!/\.(css|[cm]?js)$/.test(base)) continue;
-    fileByBasename.set(base, fileName);
+    fileByBasename.set(base, a.fileName);
   }
 
-  for (const [fileName, asset] of Object.entries(bundle)) {
-    const a = asset as {type?: string; code?: string};
-    if (a.type !== 'chunk' || typeof a.code !== 'string') continue;
+  for (const asset of Object.values(bundle)) {
+    const a = asset as {type?: string; code?: string; fileName?: string};
+    if (a.type !== 'chunk' || typeof a.code !== 'string' || !a.fileName) continue;
 
-    const importerDir = fileName.includes('/') ? fileName.slice(0, fileName.lastIndexOf('/')) : '';
+    const current = a.fileName;
+    const importerDir = current.includes('/') ? current.slice(0, current.lastIndexOf('/')) : '';
     let code = a.code;
 
     // 1 + 2: `"./foo-xxx.js"` (static or dynamic ESM import).
