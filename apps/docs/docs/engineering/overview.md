@@ -43,6 +43,16 @@ GitHub Actions 怎么配才既快又准：
 - 防死循环 / 防滥用 / 透明性签名的具体实践
 - 升级路径：从轻量 → 自动 review → 真改代码（Claude Code Action / Copilot Coding Agent）
 
+### [🔧 GitHub CLI 实战手册](./gh-cli-guide)
+
+按使用场景组织的 `gh` 命令速查，lhx-kit 日常仓库运维 90% 操作不用开浏览器：
+
+- **登录与账号**：HTTPS vs SSH 的选择逻辑、网络抖动报 EOF 时怎么判断真实成功状态
+- **Workflow 运维**：查失败日志、re-run 失败的 release、紧急恢复指南
+- **PR 管理**：create / checkout / review / auto-merge、Changesets Version PR 的标准流程
+- **Issue / Labels / Release / Secrets** 全场景手册，含 lhx-kit 22 个 label 的一键 bootstrap 脚本
+- 10 条最常用命令速记，背下来日常够用
+
 ### [📝 Commit / PR 规范（规划中）](#)
 
 - Conventional Commits 的真实价值：不是好看，而是让 changesets / semantic-release 能机读
