@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "lhx-kit CLI: scaffold real-world MPA projects with create / add / dev / build / info / doctor / offline / upgrade commands.",
   "keywords": ["lhx-kit", "cli", "scaffold", "generator", "monorepo", "mpa", "vite"],
