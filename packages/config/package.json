@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/config",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Project and offline config schema, loader, and helpers for lhx-kit. SSOT for the whole toolchain.",
   "keywords": [
     "lhx-kit",
