@@ -54,6 +54,7 @@ module.exports = {
         'offline',
         'vite-plugin',
         'docs',
+        'engineering',
         'templates',
         'vmpa',
         'rmpa',
