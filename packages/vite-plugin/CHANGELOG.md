@@ -1,5 +1,13 @@
 # @lhx-kit/vite-plugin
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @lhx-kit/config@1.0.0
+  - @lhx-kit/runtime@1.0.0
+
 ## 0.0.3
 
 ### Patch Changes

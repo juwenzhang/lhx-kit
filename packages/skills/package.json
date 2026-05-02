@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/skills",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "Agent-agnostic skill pack for lhx-kit projects. Ships curated Markdown knowledge modules (add page / configure CDN / mobile adaptation / offline packaging / renderer schema / troubleshooting) that can be installed into any AI coding assistant via adapters (CodeBuddy / Cursor / Claude Code / plain Markdown).",
   "keywords": [
     "lhx-kit",
