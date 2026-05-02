@@ -1,0 +1,77 @@
+{
+  "name": "@lhx-kit/renderer",
+  "version": "0.0.1",
+  "private": true,
+  "description": "JSON config-driven renderer with Vue3 and React bindings. Walker / merge / variant / CSP-safe expression eval + lazy zod validation.",
+  "keywords": ["lhx-kit", "renderer", "json-schema", "config-driven", "low-code", "vue3", "react", "zod"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/renderer"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/renderer/overview",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "default": "./dist/vue.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
+    "./schema-zod": {
+      "types": "./dist/schema-zod.d.ts",
+      "default": "./dist/schema-zod.js"
+    }
+  },
+  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "vue": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@lhx-kit/tsconfig": "workspace:*",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.4.0",
+    "vue": "^3.5.13"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

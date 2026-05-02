@@ -1,0 +1,132 @@
+import {defineProjectConfig} from '@lhx-kit/config';
+
+/**
+ * Single source of truth for the whole lhx-kit pipeline (CLI / vite-plugin
+ * / offline / renderer). Every field not listed here has a sensible default.
+ * See the comments below for the full capability surface.
+ */
+export default defineProjectConfig({
+  name: '<%= packageName %>',
+  framework: 'react',
+
+  // Uncomment to override path defaults (all resolved relative to this file):
+  //   srcDir:     'src',
+  //   pagesDir:   'src/pages',
+  //   publicDir:  'public',
+  //   outDir:     'dist',
+
+  // Extra aliases on top of the built-in `@` / `@pages` / `@components`.
+  // Only declare the ones you actually want; each alias must resolve to a
+  // real directory or `lhx-cli doctor` will fail.
+  aliases: {
+    '@stores': 'src/stores',
+    '@services': 'src/services',
+    '@mocks': 'src/mocks'
+  },
+
+  envs: {
+    dev: {
+      apiBase: '/api',
+      // Vite dev-server proxy; keys are forwarded verbatim to `server.proxy`.
+      proxy: {
+        '/api': {target: 'http://localhost:7001', changeOrigin: true}
+      }
+      // publicPath: '/',            // optional; sets vite `base`
+      // define: {__FEATURE_X__: 'true'}  // optional; forwarded to vite `define`
+    },
+    // test:    {apiBase: 'https://test-api.example.com'},
+    // staging: {apiBase: 'https://staging-api.example.com'},
+    prod: {apiBase: 'https://api.example.com'}
+  },
+
+  pages: {
+    home: {
+      title: '<%= appTitle %> - Home'
+      // entry:     'src/pages/home/entry.tsx',  // default = src/pages/<name>/entry.tsx
+      // template:  'template.html',              // default = project-root template.html
+      // filename:  'home.html',                  // default = <name>.html
+      // namespace: 'home',                       // default = <name>
+      // offline:   false,                        // true → also packaged into offline zip
+      // meta:      {description: 'Home page'}    // fills `{{ meta.description }}` in template.html
+    },
+    settings: {
+      title: '<%= appTitle %> - Settings'
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
+  // CDN externalisation is intentionally OFF by default for this template.
+  //
+  // Why no React UMD? Starting with React 19, the React team stopped
+  // publishing the official `umd/` directory on npm — only ESM + CJS
+  // builds remain. Serving React via `<script>` tags is therefore not
+  // a first-class option; ESM-from-CDN + import maps is, but it requires
+  // browser-native `<script type="module">` loading that this plugin's
+  // generator does not currently produce.
+  //
+  // If you DO need CDN externalisation for a React project, the kit
+  // supports a Preact + `preact/compat` recipe that leverages three
+  // per-entry extensions (all first-class features, not workarounds):
+  //
+  //   - `aliasGlobals`   — alias `window.preactCompat` to `window.React`
+  //                        / `window.ReactDOM` so bundle rewrites work.
+  //   - `initScript`     — polyfill React 18's `createRoot` on top of
+  //                        preact/compat's classic `render()` API.
+  //   - `localFallback`  — pick the exact `preact/compat/dist/compat.umd.js`
+  //                        file on disk for offline / network-failure.
+  //
+  // See `examples/rmpa-preact` (when published) for a worked example, or
+  // consult the lhx-kit docs under "CDN recipes". Until then, keeping this
+  // block commented out means React + react-router-dom ship inside the
+  // per-page bundle, which stays 100 % offline-friendly out of the box.
+  //
+  //   cdn: {
+  //     enabled: true,
+  //     applyOn: ['build'],
+  //     fallback: 'local',
+  //     timeoutMs: 5000,
+  //     globalNamespace: 'LhxCdn',
+  //     entries: [
+  //       {
+  //         name: 'preact',
+  //         globalVar: 'preact',
+  //         externals: [],
+  //         localFallback: 'preact/dist/preact.min.umd.js',
+  //         urls: ['https://unpkg.com/preact@10.25.0/dist/preact.min.umd.js']
+  //       },
+  //       {
+  //         name: 'preact-hooks',
+  //         globalVar: 'preactHooks',
+  //         externals: [],
+  //         depends: ['preact'],
+  //         localFallback: 'preact/hooks/dist/hooks.umd.js',
+  //         urls: ['https://unpkg.com/preact@10.25.0/hooks/dist/hooks.umd.js']
+  //       },
+  //       {
+  //         name: 'preact-compat',
+  //         globalVar: 'preactCompat',
+  //         externals: ['react', 'react-dom', 'react-dom/client'],
+  //         depends: ['preact', 'preact-hooks'],
+  //         localFallback: 'preact/compat/dist/compat.umd.js',
+  //         urls: ['https://unpkg.com/preact@10.25.0/compat/dist/compat.umd.js'],
+  //         aliasGlobals: ['React', 'ReactDOM'],
+  //         initScript:
+  //           'var C=window.preactCompat;'
+  //           + 'if(C&&!C.createRoot){'
+  //           +   'C.createRoot=function(c){return{'
+  //           +     'render:function(e){C.render(e,c);},'
+  //           +     'unmount:function(){C.unmountComponentAtNode(c);}'
+  //           +   '};};'
+  //           +   'window.ReactDOM=C;'
+  //           + '}'
+  //       }
+  //     ]
+  //   }
+
+  // Opt into the offline pipeline by uncommenting below AND creating
+  // `offline.config.ts` next to this file. See docs or run:
+  //   lhx-cli create --features=offline
+  //
+  // offline: {enabled: true}
+});

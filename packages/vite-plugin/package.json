@@ -1,0 +1,56 @@
+{
+  "name": "@lhx-kit/vite-plugin",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Vite plugin that translates project.config.ts into MPA build/dev configuration: chunk family grouping, CDN import rewriting, per-page output, local vendor fallback, and predefined gzip + brotli compression.",
+  "keywords": ["lhx-kit", "vite", "vite-plugin", "mpa", "rollup", "cdn", "brotli", "gzip", "manualchunks"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/vite-plugin"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/runtime/vite-plugin",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@lhx-kit/config": "workspace:*",
+    "@lhx-kit/runtime": "workspace:*"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0"
+  },
+  "devDependencies": {
+    "@lhx-kit/tsconfig": "workspace:*",
+    "@types/node": "^20.11.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.4.0",
+    "vite": "^5.4.11"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

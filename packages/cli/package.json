@@ -1,0 +1,83 @@
+{
+  "name": "@lhx-kit/cli",
+  "version": "0.0.1",
+  "private": true,
+  "description": "lhx-kit CLI: scaffold real-world MPA projects with create / add / dev / build / info / doctor / offline / upgrade commands.",
+  "keywords": ["lhx-kit", "cli", "scaffold", "generator", "monorepo", "mpa", "vite"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/cli/reference",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "bin": {
+    "lhx-cli": "./dist/bin.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke": "node ./dist/bin.js --help",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@lhx-kit/config": "workspace:*",
+    "@lhx-kit/offline": "workspace:*",
+    "cac": "^6.7.14",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.2.0",
+    "giget": "^1.2.5",
+    "jiti": "^2.4.2",
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2",
+    "ts-morph": "^24.0.0"
+  },
+  "peerDependencies": {
+    "@lhx-kit/skills": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@lhx-kit/skills": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@lhx-kit/skills": "workspace:*",
+    "@lhx-kit/tsconfig": "workspace:*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.0",
+    "@types/prompts": "^2.4.9",
+    "tsup": "^8.3.5",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

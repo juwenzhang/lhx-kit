@@ -1,0 +1,55 @@
+{
+  "name": "@lhx-kit/offline",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Offline packaging pipeline: whitelist filter, sha256 manifest, AdmZip packer, HTML CDN URL strip, and inspect tools.",
+  "keywords": ["lhx-kit", "offline", "hybrid", "webview", "manifest", "zip", "prefetch"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/offline"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/offline/overview",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "fs-extra": "^11.2.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@lhx-kit/tsconfig": "workspace:*",
+    "@types/adm-zip": "^0.5.7",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

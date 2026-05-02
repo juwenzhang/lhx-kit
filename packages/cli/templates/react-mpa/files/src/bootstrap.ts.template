@@ -1,0 +1,28 @@
+import {setupMobile} from '@lhx-kit/runtime/mobile';
+import {createLogger} from '@lhx-kit/runtime/logger';
+
+export const logger = createLogger({
+  level: import.meta.env.DEV ? 'debug' : 'info',
+  tags: {app: '<%= packageName %>'}
+});
+
+/**
+ * App-wide setup run before each page mounts.
+ *
+ * `react-mpa` is positioned as a desktop admin template (AntD 5, px-based
+ * design tokens) so the rem adaptation is **disabled** — `enableRem: false`.
+ * We still install the viewport meta and safe-area CSS vars so mobile-adjacent
+ * use cases (a mini-admin embedded in a hybrid WebView, for instance) keep
+ * working without extra config.
+ *
+ * If you pivot this project toward an H5 / mobile-first design, switch to
+ * `setupMobile({maxWidth: 750})` and add `postcss-pxtorem` in `vite.config.ts`.
+ * See the vue3-mpa template for a ready-made example.
+ */
+export async function bootstrap(): Promise<void> {
+  if (import.meta.env.DEV) {
+    const {worker} = await import('./mocks/browser');
+    await worker.start({onUnhandledRequest: 'bypass'});
+  }
+  setupMobile({enableRem: false});
+}

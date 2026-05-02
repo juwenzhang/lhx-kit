@@ -1,0 +1,101 @@
+{
+  "name": "@lhx-kit/runtime",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Browser runtime toolkit: request, env, mobile (rem adaptation), logger, bridge, auth, mock, experiment, theme, cdn-loader.",
+  "keywords": ["lhx-kit", "runtime", "axios", "rem", "lib-flexible", "msw", "feature-flag", "cdn-loader"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/runtime"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/runtime/overview",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./request": {
+      "types": "./dist/request.d.ts",
+      "default": "./dist/request.js"
+    },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "default": "./dist/env.js"
+    },
+    "./mobile": {
+      "types": "./dist/mobile.d.ts",
+      "default": "./dist/mobile.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "default": "./dist/logger.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge.d.ts",
+      "default": "./dist/bridge.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./mock": {
+      "types": "./dist/mock.d.ts",
+      "default": "./dist/mock.js"
+    },
+    "./experiment": {
+      "types": "./dist/experiment.d.ts",
+      "default": "./dist/experiment.js"
+    },
+    "./theme": {
+      "types": "./dist/theme.d.ts",
+      "default": "./dist/theme.js"
+    },
+    "./cdn-loader": {
+      "types": "./dist/cdn-loader.d.ts",
+      "default": "./dist/cdn-loader.js"
+    }
+  },
+  "files": ["dist", "README.md", "README.zh-CN.md", "LICENSE", "CHANGELOG.md", "package.json", "tsconfig.json"],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "ua-parser-js": "^1.0.39"
+  },
+  "peerDependencies": {
+    "msw": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "msw": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@lhx-kit/tsconfig": "workspace:*",
+    "@types/node": "^20.11.0",
+    "@types/ua-parser-js": "^0.7.39",
+    "tsup": "^8.3.5",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

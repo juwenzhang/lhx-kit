@@ -1,0 +1,37 @@
+<script setup lang="ts">
+import {createConfiguredPage} from '@lhx-kit/renderer/vue';
+import {createRegistry} from '@lhx-kit/renderer';
+import schema from '../render.json';
+import Heading from '@/components/Heading.vue';
+import Card from '@/components/Card.vue';
+import Paragraph from '@/components/Paragraph.vue';
+
+const registry = createRegistry<typeof Heading | typeof Card | typeof Paragraph>();
+registry.registerAll({
+  Heading: () => Heading,
+  Card: () => Card,
+  Paragraph: () => Paragraph
+});
+
+const RendererPage = createConfiguredPage({
+  schema: schema as unknown as Parameters<typeof createConfiguredPage>[0]['schema'],
+  registry: registry as unknown as Parameters<typeof createConfiguredPage>[0]['registry'],
+  state: {greeting: 'Welcome to <%= appTitle %>'},
+  flags: {showPromo: new URLSearchParams(location.search).get('promo') === '1'}
+});
+</script>
+
+<template>
+  <section class="home-landing">
+    <RendererPage />
+    <nav class="home-landing__nav">
+      <router-link to="/about">Go to About</router-link>
+    </nav>
+  </section>
+</template>
+
+<style scoped>
+.home-landing__nav {
+  margin-top: 16px;
+}
+</style>

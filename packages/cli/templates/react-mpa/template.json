@@ -1,0 +1,24 @@
+{
+  "name": "react-mpa",
+  "title": "React 19 Multi-Page (MPA)",
+  "description": "A React 19 + Vite multi-page application driven by project.config.ts, @lhx-kit/vite-plugin, and the @lhx-kit/renderer. Ships ESLint + Prettier + husky + commitlint + vitest + playwright + AntD 5 + Zustand + React Router 6 + MSW. Offline packaging is an opt-in feature.",
+  "framework": "react",
+  "projectType": "admin",
+  "tags": ["react", "react19", "vite", "mpa", "renderer"],
+  "features": [
+    {
+      "name": "offline",
+      "title": "Offline packaging",
+      "description": "Add offline.config.ts and offline:build / offline:inspect scripts.",
+      "defaultEnabled": false
+    }
+  ],
+  "postCreate": [
+    "cd <%= projectName %>",
+    "pnpm dev                              # serve all pages (dev)",
+    "lhx-cli add page dashboard --title='Dashboard'",
+    "pnpm build                            # build every page",
+    "pnpm test                             # unit tests (vitest)",
+    "pnpm e2e:install && pnpm e2e          # e2e (playwright)"
+  ]
+}

@@ -1,0 +1,46 @@
+/**
+ * Minimal CSS reset for the rem-adaptive H5 layout.
+ *
+ * `postcss-pxtorem` only converts the `px` values you write in your own
+ * source files. Browser User-Agent defaults (like `h1 { font-size: 2em }`)
+ * are NOT touched by PostCSS, so when `setupMobile` sets the root font-size
+ * to `clientWidth / 10`, every default-styled element balloons.
+ *
+ * Writing explicit `px` here lets `postcss-pxtorem` transform them into
+ * `rem`, giving pixel-perfect 2x-mock rendering on mobile and a centered
+ * "phone emulator" look on desktop (thanks to `setupMobile({maxWidth: 750})`).
+ *
+ * Adjust the numbers for your design canvas (values shown are for a
+ * 750 px 2x mock: `h1 = 48 px` renders as 24 px on an iPhone).
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft Yahei',
+    sans-serif;
+  font-size: 28px;
+  line-height: 1.5;
+  color: #333;
+  background: #f7f7f7;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 { font-size: 48px; font-weight: 600; margin: 0 0 24px; }
+h2 { font-size: 36px; font-weight: 600; margin: 0 0 20px; }
+h3 { font-size: 32px; font-weight: 600; margin: 0 0 16px; }
+h4 { font-size: 28px; font-weight: 600; margin: 0 0 12px; }
+p  { font-size: 28px; margin: 0 0 16px; }
+
+a  { color: #1677ff; text-decoration: none; }
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 28px;
+}
+
+* { box-sizing: border-box; }
+
+img, svg, video { max-width: 100%; display: block; }
+
+.hairlines .hairline { border-width: 0.5px; }
