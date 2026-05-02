@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 查阅文档
+    url: https://juwenzhang.github.io/lhx-kit/
+    about: 大部分问题都能在文档里找到答案
+  - name: ❓ FAQ 常见问题
+    url: https://juwenzhang.github.io/lhx-kit/reference/faq
+    about: 19 个常见问题按类目整理
+  - name: 💬 讨论（Discussions）
+    url: https://github.com/juwenzhang/lhx-kit/discussions
+    about: 非 bug 类的使用讨论 / 思路分享

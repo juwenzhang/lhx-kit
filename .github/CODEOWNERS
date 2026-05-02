@@ -1,0 +1,30 @@
+# GitHub CODEOWNERS — 按文件路径自动指派 PR reviewer
+# 语法文档：https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+#
+# 规则按从上到下**最后一条匹配**生效。
+
+# 默认拥有者（所有路径的 fallback）
+*                                @juwenzhang
+
+# 基础设施
+/.github/                        @juwenzhang
+/Makefile                        @juwenzhang
+/biome.json                      @juwenzhang
+/commitlint.config.cjs           @juwenzhang
+/lint-staged.config.cjs          @juwenzhang
+/tsconfig.base.json              @juwenzhang
+/pnpm-workspace.yaml             @juwenzhang
+
+# 内部包
+/packages/config/                @juwenzhang
+/packages/cli/                   @juwenzhang
+/packages/runtime/               @juwenzhang
+/packages/renderer/              @juwenzhang
+/packages/offline/               @juwenzhang
+/packages/vite-plugin/           @juwenzhang
+
+# 文档
+/apps/docs/                      @juwenzhang
+
+# 示例
+/examples/                       @juwenzhang

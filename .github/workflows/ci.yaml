@@ -1,0 +1,191 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+# 同一 PR 后续 push 会 cancel 前一次跑（节省算力）
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 给 CI 最小权限
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: 9
+  NODE_VERSION: 20
+
+jobs:
+  # ──────────────────────────────────────────────────────
+  # Lint / Format 检查
+  # ──────────────────────────────────────────────────────
+  lint:
+    name: 🎨 Lint (Biome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Biome check
+        run: pnpm exec biome check .
+
+  # ──────────────────────────────────────────────────────
+  # Commit Message 规范检查
+  # ──────────────────────────────────────────────────────
+  commitlint:
+    name: 📝 Commit Lint
+    runs-on: ubuntu-latest
+    # 仅 PR 场景检查整段 commits
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Validate commits
+        run: |
+          pnpm exec commitlint \
+            --from=${{ github.event.pull_request.base.sha }} \
+            --to=${{ github.event.pull_request.head.sha }} \
+            --verbose
+
+  # ──────────────────────────────────────────────────────
+  # TypeScript 类型检查 + 构建
+  # ──────────────────────────────────────────────────────
+  typecheck-build:
+    name: 🔧 Typecheck & Build (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build internal packages
+        run: pnpm --filter './packages/*' --if-present build
+
+      - name: Typecheck all workspaces
+        run: pnpm -r --if-present --parallel typecheck
+
+      - name: Build examples smoke
+        run: |
+          pnpm --filter vmpa build
+          pnpm --filter rmpa build
+
+  # ──────────────────────────────────────────────────────
+  # 单元测试
+  # ──────────────────────────────────────────────────────
+  test:
+    name: 🧪 Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build deps for tests
+        run: pnpm --filter './packages/*' --if-present build
+
+      - name: Run tests
+        run: pnpm -r --if-present test
+
+  # ──────────────────────────────────────────────────────
+  # CLI smoke（保底：`lhx-cli --help` 能启动）
+  # ──────────────────────────────────────────────────────
+  cli-smoke:
+    name: 🚬 CLI smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm --filter '@lhx-kit/*' build
+      - run: pnpm --filter @lhx-kit/cli smoke
+
+  # ──────────────────────────────────────────────────────
+  # 跨平台兼容性（仅对 CLI 关键路径）
+  # ──────────────────────────────────────────────────────
+  cross-platform:
+    name: 🌐 Cross-platform (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm --filter '@lhx-kit/*' build
+      - run: pnpm --filter @lhx-kit/cli smoke

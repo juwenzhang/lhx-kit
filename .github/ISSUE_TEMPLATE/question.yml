@@ -1,0 +1,27 @@
+name: ❓ 问题咨询
+description: 使用上的疑问（先搜 FAQ / 文档）
+title: '[Question] '
+labels: ['question']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **在提问前请先确认**：
+        - 📖 阅读过 [文档](https://juwenzhang.github.io/lhx-kit/)
+        - 🔍 搜索过已有 Issues
+        - ❓ 看过 [FAQ](https://juwenzhang.github.io/lhx-kit/reference/faq)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 你的问题
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 上下文
+      description: 什么版本 / 什么场景 / 尝试过什么
+    validations:
+      required: true

@@ -1,0 +1,68 @@
+name: 🐛 Bug 报告
+description: 报告一个 bug / 功能异常
+title: '[Bug] '
+labels: ['bug', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请提供**最小复现**，这是解决 bug 最快的路径。
+
+  - type: input
+    id: package
+    attributes:
+      label: 受影响的包
+      description: 例如 `@lhx-kit/cli`、`@lhx-kit/vite-plugin`、`examples/vmpa` …
+      placeholder: '@lhx-kit/vite-plugin'
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 请按顺序描述如何触发此 bug
+      placeholder: |
+        1. `lhx-cli create my-app --template=react-mpa`
+        2. cd my-app
+        3. `pnpm dev`
+        4. 看到报错 "..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 带上完整的错误信息 / 堆栈
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 最小复现仓库（强烈推荐）
+      description: GitHub 仓库链接或 StackBlitz
+      placeholder: https://github.com/your-name/repro-repo
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 运行 `npx envinfo --system --binaries --browsers --npmPackages "@lhx-kit/*"` 把结果贴在这里
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 其他上下文
+      description: 任何可能相关的信息

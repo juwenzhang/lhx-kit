@@ -1,0 +1,113 @@
+name: Release
+
+# Changesets "PR-or-publish" flow:
+#
+# 1. Developer merges feature PR(s) containing changeset markdown files
+#    (`.changeset/*.md`) into master.
+# 2. This workflow runs on every master push. The Changesets Action detects
+#    pending changesets and opens (or updates) a "Version Packages" PR that:
+#      - consumes the `.changeset/*.md` files
+#      - bumps `package.json#version` for affected packages (respects the
+#        `fixed` group in `.changeset/config.json` — all @lhx-kit/* bump
+#        together)
+#      - generates/updates each package's CHANGELOG.md
+# 3. A maintainer reviews and MERGES that Version Packages PR.
+# 4. On merge, this same workflow runs again. It finds no pending
+#    changesets BUT sees the bumped versions, so it goes into "publish"
+#    mode: runs `pnpm release` which does `pnpm -r build && changeset
+#    publish`. Packages with `private: true` in their package.json are
+#    automatically skipped (currently all of them — toggle off when ready).
+#
+# Why this is safer than "publish on every push":
+#   - Version bump is a separate, reviewable PR (human checks CHANGELOG).
+#   - No accidental publish from an unrelated master push.
+#   - Rollback = revert the Version Packages PR.
+#
+# Required repository secrets:
+#   - NPM_TOKEN       — an automation token from npmjs.com with publish scope
+#   - GITHUB_TOKEN    — auto-provided by GitHub; needs contents:write + pull-requests:write
+#                       (set in permissions below)
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # push version bump PR + tags
+  pull-requests: write     # open / update the Version Packages PR
+  id-token: write          # npm provenance (optional but recommended)
+
+jobs:
+  release:
+    name: Release (Changesets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so changesets can generate accurate changelogs.
+          fetch-depth: 0
+          # Default GITHUB_TOKEN cannot push to protected branches. A PAT
+          # with `contents:write` can be set as REPO_PUSH_TOKEN to bypass;
+          # fallback here keeps the workflow functional when running in
+          # forks or without the PAT (just opens PR, does not push tags).
+          token: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          # Needed for npm publish with provenance
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        # Build happens BEFORE changeset publish so `dist/` is present when
+        # the publish step packs each package. If the action falls into the
+        # "open PR" branch (no pending publishes), the build is still
+        # useful as a smoke test that master is publishable.
+        run: pnpm -r --filter='./packages/*' build
+
+      - name: Create Release PR or publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # `publish: pnpm release` runs when the "Version Packages" PR is
+          # merged. It calls `pnpm release` from root → `changeset publish`.
+          publish: pnpm release
+          # `version` (omitted) → action uses default `changeset version`,
+          # which we've aliased in package.json to also run `pnpm install
+          # --lockfile-only` so the lockfile stays in sync.
+          version: pnpm run version
+          commit: "chore(release): version packages"
+          title: "chore(release): version packages"
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Enables npm provenance attestations (proves the package was
+          # built on GitHub Actions from this repo at this commit).
+          NPM_CONFIG_PROVENANCE: "true"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Changesets result" >> "$GITHUB_STEP_SUMMARY"
+          echo "- published:  ${{ steps.changesets.outputs.published }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}" >> "$GITHUB_STEP_SUMMARY"

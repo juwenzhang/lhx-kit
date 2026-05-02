@@ -1,0 +1,75 @@
+name: Deploy Docs to GitHub Pages
+
+on:
+  push:
+    branches: [master, main]
+    # 仅文档 / 工程化配置 / 根 package.json 变更时触发
+    paths:
+      - 'apps/docs/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-*.yaml'
+      - '.github/workflows/rspress-docs-ci-cd.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 发版并发不允许重叠（避免 Pages 部署互相覆盖）
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 📚 Build Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # 若 lastUpdated 启用需要完整 git log
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build internal packages
+        # 文档站不依赖内部包，但其他页面可能引用；保险起见一次 build
+        run: pnpm --filter './packages/*' --if-present build
+
+      - name: Build docs with Rspress
+        run: pnpm run docs:build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/docs/doc_build
+
+  deploy:
+    name: 🚀 Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
