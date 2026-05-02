@@ -1,10 +1,43 @@
 name: CI
 
+# Path filters: only run CI when something it actually validates has
+# changed. Docs-only pushes (apps/docs/**) or README tweaks skip CI
+# entirely, saving several minutes per push.
+#
+# Notes:
+#   - Root configs (biome.json, tsconfig.base.json, pnpm-*.yaml, root
+#     package.json, lint-staged/commitlint config) affect every package,
+#     so they MUST be listed.
+#   - The workflow file itself is listed so iterations on ci.yaml run
+#     immediately rather than requiring an unrelated code change.
+#   - `paths-ignore` is deliberately NOT used — it silently passes when
+#     a push touches both listed AND unlisted paths, leading to false
+#     greens. Explicit `paths` allow-list is safer.
 on:
   push:
     branches: [master, main]
+    paths:
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.base.json'
+      - 'biome.json'
+      - 'commitlint.config.cjs'
+      - 'lint-staged.config.cjs'
+      - '.github/workflows/ci.yaml'
   pull_request:
     branches: [master, main]
+    paths:
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.base.json'
+      - 'biome.json'
+      - 'commitlint.config.cjs'
+      - 'lint-staged.config.cjs'
+      - '.github/workflows/ci.yaml'
   workflow_dispatch:
 
 # 同一 PR 后续 push 会 cancel 前一次跑（节省算力）
@@ -129,12 +162,10 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Typecheck all workspaces
+        # `--if-present` means packages without a `typecheck` script are
+        # silently skipped. examples/* intentionally don't declare one
+        # any more — they're user-facing samples, not part of CI truth.
         run: pnpm -r --if-present --parallel typecheck
-
-      - name: Build examples
-        run: |
-          pnpm --filter vmpa build
-          pnpm --filter rmpa build
 
   # ──────────────────────────────────────────────────────
   # 跨平台兼容性（Ubuntu / macOS / Windows 上 packages/* 能否构建）

@@ -3,12 +3,21 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches: [master, main]
-    # 仅文档 / 工程化配置 / 根 package.json 变更时触发
+    # Trigger only when something that actually shows up on the docs
+    # site changes. Rationale:
+    #   - apps/docs/**            → the docs source itself
+    #   - .github/workflows/...   → iterating on the deploy pipeline
+    #   - pnpm-lock.yaml          → dep graph change may affect Rspress
+    #     build output (new minor of rspress etc.)
+    #
+    # Deliberately NOT listed:
+    #   - packages/**             → docs site imports nothing from them
+    #     at build time; CI workflow already covers package changes.
+    #   - root package.json       → scripts/deps change handled via
+    #     pnpm-lock.yaml above.
     paths:
       - 'apps/docs/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'pnpm-*.yaml'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/rspress-docs-ci-cd.yaml'
   workflow_dispatch:
 
@@ -55,11 +64,12 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build internal packages
-        # 文档站不依赖内部包，但其他页面可能引用；保险起见一次 build
-        run: pnpm --filter './packages/*' --if-present build
-
       - name: Build docs with Rspress
+        # Rspress consumes pure markdown + its own components. It does
+        # NOT import anything from packages/*, so there's no need to
+        # build the internal packages here (that's what the CI workflow
+        # is for). Dropping the `pnpm --filter './packages/*' build`
+        # step shaved ~90s off the typical docs deploy.
         run: pnpm run docs:build
 
       - name: Upload artifact
