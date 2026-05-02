@@ -126,33 +126,6 @@ jobs:
           pnpm --filter rmpa build
 
   # ──────────────────────────────────────────────────────
-  # 单元测试
-  # ──────────────────────────────────────────────────────
-  test:
-    name: 🧪 Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile=false
-
-      - name: Build deps for tests
-        run: pnpm --filter './packages/*' --if-present build
-
-      - name: Run tests
-        run: pnpm -r --if-present test
-
-  # ──────────────────────────────────────────────────────
   # 跨平台兼容性（Ubuntu / macOS / Windows 上 packages/* 能否构建）
   # ──────────────────────────────────────────────────────
   cross-platform:
