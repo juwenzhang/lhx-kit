@@ -9,12 +9,13 @@
 | 命令 | 用途 |
 | --- | --- |
 | [`create`](#create) | 🚀 创建新项目 |
-| [`add`](#add) | ➕ 往项目里加 page / component / api / module |
+| [`add`](#add) | ➕ 往项目里加 page / component / api / module / **package** |
 | [`dev`](#dev) | 🧪 启动开发服务器 |
 | [`build`](#build) | 🏗️ 生产构建 |
 | [`info`](#info) | 📊 打印当前项目的配置摘要 |
 | [`doctor`](#doctor) | 🩺 环境 + 项目诊断 |
 | [`offline`](#offline) | 📦 离线包相关子命令 |
+| [`skills`](#skills) | 🧠 AI 编程助手的 skill 包管理（Cursor / CodeBuddy / Claude / plain） |
 | [`upgrade`](#upgrade) | ⬆️ 升级项目（规划中） |
 
 ---
@@ -91,6 +92,7 @@ lhx-cli create my-app -t vue3-mpa --no-install
 
 ```bash
 lhx-cli add page <name>
+lhx-cli add package <name>     # 在 monorepo 里 scaffold 一个新 workspace
 lhx-cli add component <name>   # （规划中）
 lhx-cli add api <name>         # （规划中）
 lhx-cli add module <name>      # （规划中）
@@ -171,6 +173,130 @@ ts-morph 把 TS 源码 parse 成 AST，在 PropertyAssignment 层面插值。
 
 **零踩坑**，保留用户所有原有格式 / 注释 / 行尾风格。
 :::
+
+### `add package <name>` {#add-package}
+
+在 **pnpm monorepo 根目录**一键 scaffold 一个全新的可发布 workspace。和
+`add page` 不同，这条命令**不需要**位于 lhx-kit 项目里——它是 monorepo 级别
+的操作，专为"新包维护者"设计。
+
+```bash
+lhx-cli add package <name> [options]
+
+# 示例
+lhx-cli add package my-lib
+lhx-cli add package renderer-plugins --description="渲染器插件 API"
+lhx-cli add package legacy-shim --force        # 覆盖已存在目录
+```
+
+#### 选项
+
+| 选项 | 说明 |
+| --- | --- |
+| `--description <text>` | 写入 `package.json` 的 description（默认是通用占位） |
+| `--force` | 目标 `packages/<name>/` 已存在时允许覆盖 |
+| `--yes` | 非交互模式（name 必须作为 CLI 参数传入） |
+
+#### 产物
+
+在 `packages/<name>/` 下生成 **7 个文件**：
+
+```text title="scaffold 产物"
+packages/my-lib/
+├── package.json         # ESM + tsup scripts + files 白名单 + publishConfig.access=public
+├── tsconfig.json        # extends <scope>/tsconfig/library.json + ignoreDeprecations:"6.0"
+├── tsup.config.ts       # ESM-only + dts + target node18
+├── src/
+│   └── index.ts         # 起步导出：helloXxx() + xxxVersion
+├── README.md            # 安装 / 用法 / 文档链接
+├── README.zh-CN.md      # 中文版
+└── LICENSE              # MIT
+```
+
+#### 故意**不**生成的文件
+
+| 文件 | 原因 |
+| --- | --- |
+| `CHANGELOG.md` | 由 Changesets 管理。模板里先写会让 `changeset version` 把它当成过期 changelog 处理。 |
+| `tests/` | 保持起步最小化。用到 Vitest/Jest 时再 `pnpm -C packages/<name> add -D vitest` 添加。 |
+| 独立的 `CI yaml` | CI 统一跑 `pnpm --filter './packages/*' build`，不需要按包切分。 |
+
+#### 关键设计
+
+- **Monorepo 根检测**：命令会从 cwd 往上找 `pnpm-workspace.yaml` + `packages/`
+  目录。**不在 monorepo 里**直接打印友好提示（建议改用 `add module` / `create`），
+  不会误写破坏性文件。
+- **npm scope 自动推导**：读根 `package.json#name`：
+  - `@lhx-kit/root` → 新包叫 `@lhx-kit/<name>`
+  - `@acme/root`   → 新包叫 `@acme/<name>`（fork 友好，无需 CLI flag）
+  - 非 scoped 包 → 回退到默认的 `@lhx-kit`
+
+#### 生成后必做的 4 步
+
+CLI 末尾会打印这个 "next steps" 块——按顺序执行：
+
+```bash
+# 1. 让 pnpm 识别新 workspace
+pnpm install
+
+# 2. 验证构建管线
+cd packages/<name> && pnpm build
+ls dist/            # 期望: index.js + index.d.ts
+
+# 3. 声明意图（发布前必做）
+pnpm changeset
+# 选 <name> → patch/minor/major → 写清楚 summary
+git add .changeset/
+git commit -m "feat(<name>): initial scaffold"
+
+# 4. 一次性：在 npmjs.com 给新包配 Trusted Publisher
+#    https://www.npmjs.com/package/<scope>/<name>/access
+#    填 GitHub Actions / juwenzhang / <repo> / release.yaml / (环境留空)
+```
+
+完整的发布逻辑见 [🚀 发布流水线](../engineering/release-pipeline)。
+
+#### 异常处理示例
+
+**不在 monorepo 根目录**：
+
+```bash
+$ cd /tmp/some-regular-project
+$ lhx-cli add package my-lib
+⚠ add package: not running inside a pnpm monorepo.
+ℹ Detected missing `pnpm-workspace.yaml` or `packages/` up from cwd.
+
+ℹ This command scaffolds a workspace under packages/<name>/. You probably want:
+ℹ   • For a single-app project:        lhx-cli add module <name>
+ℹ   • For a brand-new project:         lhx-cli create <name>
+ℹ   • If you DO want a monorepo here:  cd into its root first, then retry.
+```
+
+**目录已存在**：
+
+```bash
+$ lhx-cli add package existing-lib
+Error: packages/existing-lib already exists. Pass --force to overwrite.
+```
+
+**name 不是 kebab-case**：
+
+```bash
+$ lhx-cli add package MyLib
+Error: Package name "MyLib" must be lowercase kebab-case (e.g. "my-pkg").
+```
+
+#### 验证安装后的产物正确
+
+```bash
+# dry-run 看发布 tarball 会包含哪些文件
+cd packages/my-lib
+npm pack --dry-run
+# 期望输出恰好 7 个文件：
+#   package.json / tsconfig.json / dist/index.{js,d.ts}
+#   + README.md / README.zh-CN.md / LICENSE
+# 多出任何其他文件 = files 白名单配置有漏
+```
 
 ---
 
@@ -277,7 +403,134 @@ lhx-cli offline diff old.zip new.zip        # 对比（规划中）
 
 ---
 
-## 九、⬆️ upgrade {#upgrade}
+## 九、🧠 skills {#skills}
+
+把 [`@lhx-kit/skills`](https://www.npmjs.com/package/@lhx-kit/skills) 里
+**agent-agnostic** 的 8 个知识模块一键安装到你当前用的 AI 编程助手
+（Cursor / CodeBuddy / Claude Code / 纯 Markdown）。
+
+```bash
+lhx-cli skills [action] [...names] [options]
+```
+
+### 9.1 子命令
+
+| 子命令 | 作用 |
+| --- | --- |
+| `list` | 列出所有内置 skill（name / title / tags / triggers） |
+| `add <name...>` | 把指定 skill 安装到一个或多个目标 adapter 目录 |
+| `sync` | 用当前 skills 包的最新版本覆盖磁盘上所有已安装 skill |
+
+### 9.2 常用选项
+
+```bash
+--targets <list>   逗号分隔：codebuddy,cursor,claude,plain （默认: plain）
+--all              选择全部内置 skill
+--force            覆盖磁盘上同名文件
+--yes              非交互模式
+```
+
+### 9.3 实操示例
+
+```bash
+# 看看有哪些 skill
+lhx-cli skills list
+
+# 把 CDN 配置 skill 同时装到 Cursor 和 CodeBuddy
+lhx-cli skills add configure-cdn --targets=cursor,codebuddy
+
+# 一次性把所有 skill 装到 Cursor
+lhx-cli skills add --all --targets=cursor
+
+# 升级一轮（重新生成 .cursor/rules/ 下的 mdc 文件等）
+lhx-cli skills sync --targets=cursor,codebuddy
+```
+
+产物举例（以 `--targets=cursor` 为例）：
+
+```text
+.cursor/
+└── rules/
+    ├── add-page.mdc
+    ├── configure-cdn.mdc
+    ├── create-package.mdc
+    ├── offline-packaging.mdc
+    └── ...
+```
+
+### 9.4 内置的 8 个 skill
+
+| Skill | 类型 | 对应 CLI 命令（若有） |
+| --- | --- | --- |
+| `add-page` | 行为型 | `lhx-cli add page <name>` |
+| `offline-packaging` | 行为型 | `lhx-cli offline build` |
+| `create-package` | 行为型 | `lhx-cli add package <name>` |
+| `configure-cdn` | 知识型（部分行为型） | — |
+| `chunk-optimization` | 知识型 | — |
+| `mobile-adaptation` | 知识型 | — |
+| `renderer-schema` | 知识型 | — |
+| `troubleshooting` | 知识型 | — |
+| `lhx-project-overview` | 元信息 | — |
+
+### 9.5 skill 清单字段（`skill.json`）
+
+开发者自己写 skill 时需要填的字段：
+
+```json title="skills/<name>/skill.json"
+{
+  "name": "add-page",
+  "title": "Add a Page",
+  "description": "<=400 chars. 人类和 LLM 都用这段判断要不要激活这个 skill。",
+  "version": "0.1.0",
+  "tags": ["page", "routing"],
+  "triggers": ["add a page", "new page", "create a page"],
+  "globs": ["project.config.ts", "src/pages/**"],
+  "alwaysApply": false,
+  "command": "lhx-cli add page <name> [--title=<text>] [--offline]",
+  "references": [
+    { "title": "Getting started", "url": "https://juwenzhang.github.io/lhx-kit/guide/getting-started" }
+  ]
+}
+```
+
+#### `command` 字段（0.0.4+ 新增）
+
+可选字段，**把 skill 和 CLI 命令正式绑定起来**。规则：
+
+- **行为型 skill**：必须填。填完之后 AI agent 读到这条 skill 时就知道
+  "比起改代码，应该跑这个命令"。例：`add-page` / `offline-packaging` /
+  `create-package`。
+- **知识型 skill**：留空。比如 `troubleshooting` / `mobile-adaptation`
+  本质是解释概念，没有对应 CLI 命令。
+
+AI agent 看到 `command` 字段时的期望行为：
+
+1. **优先推荐 CLI**（而不是鼓励用户手动改代码）；
+2. **把 CLI 输出回显给用户**，让 CLI 的"next steps"引导后续操作；
+3. 只有用户明确拒绝用 CLI，或 CLI 不可用，才退回手动模式。
+
+### 9.6 常见问答
+
+:::info 我的仓库没装 lhx-cli，能用 skill 吗？
+可以。每个 skill 都包含"Manual Alternative"章节 —— 没装 CLI 时按手动流程走。
+但强烈建议装上 CLI，行为型 skill 的 AST 级修改手动做会出错。
+:::
+
+:::info skill 会被自动更新吗？
+不会自动。`pnpm add -D @lhx-kit/skills@latest` 升包，然后
+`lhx-cli skills sync` 再走一次 adapter 渲染才会覆盖磁盘文件。
+有意识地"刷新"，避免惊喜变更。
+:::
+
+:::tip 自己写 skill
+fork 一下 `packages/skills/skills/add-page/`，改 `skill.json` + `SKILL.md`，
+`pnpm --filter @lhx-kit/skills build`，然后 `lhx-cli skills list` 就能看到
+你的 skill 了。发给上游可以合并到内置集里。
+:::
+
+---
+
+## 十、⬆️ upgrade {#upgrade}
 
 占位命令，规划中。将来会做：
 
@@ -287,7 +540,7 @@ lhx-cli offline diff old.zip new.zip        # 对比（规划中）
 
 ---
 
-## 十、📦 CLI 自身依赖
+## 十一、📦 CLI 自身依赖
 
 | 依赖 | 用途 |
 | --- | --- |
@@ -335,7 +588,7 @@ cli(process.argv.slice(2));
 
 ---
 
-## 十二、📖 相关资源
+## 十三、📖 相关资源
 
 - [🚀 快速开始](../guide/getting-started) — create / add page 实战
 - [📦 离线打包](../offline/overview) — offline 子命令完整说明

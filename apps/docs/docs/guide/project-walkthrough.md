@@ -189,6 +189,38 @@ pnpm -r --if-present --parallel typecheck
 
 写完每个 `packages/*` 后，**发布前必过的 4 项检查**：
 
+### ⚡ 4.0 快捷通道：用 `lhx-cli add package` 一键起步
+
+不想手写 7 个样板文件？lhx-kit 的 CLI 提供了 `add package` 命令，在任何
+pnpm monorepo 根目录跑一下就行：
+
+```bash
+lhx-cli add package <name> [--description="..."]
+```
+
+会自动生成：
+
+```text
+packages/<name>/
+├── package.json         # ESM + tsup + files 白名单 + publishConfig.access=public
+├── tsconfig.json        # 继承 @lhx-kit/tsconfig/library.json + ignoreDeprecations
+├── tsup.config.ts       # ESM-only + dts + target node18
+├── src/index.ts         # 起步导出
+├── README.md            # 带安装/用法/文档链接的 skeleton
+├── README.zh-CN.md
+└── LICENSE              # MIT
+```
+
+**故意不生成** `CHANGELOG.md`（由 Changesets 管理）和 `tests/`（按需添加）。
+
+命令末尾会打印 4 步 follow-up 清单，包括："`pnpm install` / `pnpm build` /
+`pnpm changeset` / 去 npm 网页配 Trusted Publisher"。
+
+完整命令参考见 [CLI → add package](/cli/reference#add-package)。
+
+**下面的 4 项检查仍然适用**——CLI 只是把正确的起点交给你，用户后续往里写真
+实代码、调整依赖时，这些原则要记着。
+
 ### ✅ 4.1 `package.json#files` 声明白名单
 
 ```json

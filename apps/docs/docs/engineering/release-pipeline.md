@@ -224,6 +224,12 @@ lhx-kit 需要配 8 个包：`cli`、`config`、`offline`、`renderer`、`runtim
 
 **Trusted Publisher 不能用于"从未发布过"的包**。第一次必须用传统方式（本地 `npm publish --access public` 或临时的 NPM_TOKEN）把 0.0.x 推上去；之后切到 Trusted Publishing。
 
+> 💡 **新包的首次发布流程**：先用 `lhx-cli add package <name>`
+> scaffold 出完整结构（package.json / tsconfig / tsup / 双语 README /
+> LICENSE 一次到位），然后 `cd packages/<name> && npm publish --access public`
+> 在 npm 网页配 Trusted Publisher，之后纳入 changesets 自动化。详见
+> [CLI → add package](/cli/reference#add-package)。
+
 **另一项同等重要的前置条件：npm CLI 必须 ≥ 11.5.1**。
 
 Trusted Publishing 依赖 npm 客户端实现的 OIDC token 交换接口
