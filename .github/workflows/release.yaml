@@ -84,6 +84,21 @@ jobs:
           # Needed for npm publish with provenance
           registry-url: https://registry.npmjs.org
 
+      - name: Upgrade npm to >= 11.5.1 (required for Trusted Publishing)
+        # Node 20 ships npm 10.x by default, which DOES NOT support the
+        # OIDC token-exchange endpoint /-/npm/v1/oidc/token/exchange used
+        # by Trusted Publishing. Publishing will fail with a misleading
+        # `E404 Not Found - PUT https://registry.npmjs.org/...` even
+        # after the provenance statement is signed successfully.
+        #
+        # Fix: upgrade npm to the latest version (>= 11.5.1) before the
+        # Changesets action runs. The provenance step itself works on
+        # older npm; only the final PUT step needs the new client.
+        #
+        # This must run AFTER setup-node so PATH is right, and BEFORE
+        # the publish step so changesets/action picks up the new npm.
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

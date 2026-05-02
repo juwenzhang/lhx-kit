@@ -224,18 +224,35 @@ lhx-kit 需要配 8 个包：`cli`、`config`、`offline`、`renderer`、`runtim
 
 **Trusted Publisher 不能用于"从未发布过"的包**。第一次必须用传统方式（本地 `npm publish --access public` 或临时的 NPM_TOKEN）把 0.0.x 推上去；之后切到 Trusted Publishing。
 
-如果你是从零开始，推荐流程：
+**另一项同等重要的前置条件：npm CLI 必须 ≥ 11.5.1**。
 
-```bash
-# 1. 本地临时发首版（login 过的账号）
-cd packages/cli
-npm publish --access public
-# 重复 8 次
+Trusted Publishing 依赖 npm 客户端实现的 OIDC token 交换接口
+`POST /-/npm/v1/oidc/token/exchange`。这是 npm 11.5.1 才引入的端点。低于这个版本，publish 时会出现一个**极其误导**的错误链：
 
-# 2. 上 npm 网页配 Trusted Publisher（本篇 3.1）
+1. provenance statement 签名成功（因为那是 sigstore，不经过 npm）
+2. 最后 PUT 到 registry 时 `E404 Not Found`
+3. 错误描述里写 `'@scope/pkg@x.y.z' is not in this registry`
 
-# 3. workflow 删 NPM_TOKEN，切 OIDC
+看起来像"包不存在"或"权限不对"，实际上是**旧版 npm 调不动交换端点**。
+
+#### 为什么 GitHub Actions 默认 npm 版本不够
+
+- `actions/setup-node@v4` 只负责装 Node，**不主动升级 npm**
+- Node 20 LTS 默认捆绑 **npm 10.x**
+- npm 11.x 要到 Node 23 才是默认
+
+#### 标准修复
+
+在 Release workflow 的 `setup-node` **之后**、`publish` 步骤**之前**加：
+
+```yaml
+- name: Upgrade npm to >= 11.5.1 (required for Trusted Publishing)
+  run: npm install -g npm@latest
 ```
+
+跑完一次应该能看到 `npm notice` 改成 11.x。
+
+---
 
 ### 3.3 如何确认 OIDC 生效
 
