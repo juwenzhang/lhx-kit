@@ -3,7 +3,8 @@
   "extends": "@lhx-kit/tsconfig/library.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules"]

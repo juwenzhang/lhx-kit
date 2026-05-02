@@ -21,9 +21,9 @@ export function diagnosticsFromZod(err: ZodError, source: string): Diagnostic[] 
     code: `zod/${issue.code}`,
     message: issue.message,
     // zod 4 widened `issue.path` to `PropertyKey[]` (can include `symbol`).
-    // Normalise to (string | number)[] by stringifying any symbols —
-    // schemas here never use symbol keys, so this is lossless in practice.
-    path: issue.path.map(seg => (typeof seg === 'symbol' ? seg.toString() : seg)),
+    // Collapse to (string | number)[] — our schemas never use symbol keys,
+    // and `String(sym)` produces `"Symbol(foo)"` which is a safe fallback.
+    path: (issue.path as ReadonlyArray<PropertyKey>).map(seg => (typeof seg === 'number' ? seg : String(seg))),
     source
   }));
 }
