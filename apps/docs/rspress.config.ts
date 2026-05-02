@@ -59,6 +59,7 @@ export default defineConfig({
       {text: '🧩 Runtime', link: '/runtime/overview'},
       {text: '🎨 Renderer', link: '/renderer/overview'},
       {text: '📦 Offline', link: '/offline/overview'},
+      {text: '🛠️ 工程化', link: '/engineering/overview'},
       {text: '🧱 模板', link: '/templates/catalogue'},
       {text: '❓ FAQ', link: '/reference/faq'}
     ],
@@ -115,6 +116,17 @@ export default defineConfig({
             {text: '离线打包', link: '/offline/overview'},
             {text: '打包深度剖析：压缩库 / 哈希 / 算法', link: '/offline/packaging-deep-dive'},
             {text: '升级评估：要不要做？做哪些？', link: '/offline/upgrade-assessment'}
+          ]
+        }
+      ],
+      '/engineering/': [
+        {
+          text: '🛠️ 工程化',
+          collapsed: false,
+          items: [
+            {text: '专栏总览', link: '/engineering/overview'},
+            {text: '🚀 发布流水线：Changesets + Trusted Publishing', link: '/engineering/release-pipeline'},
+            {text: '⚙️ CI 策略：paths / 跨平台 / frozen / pre-push', link: '/engineering/ci-strategy'}
           ]
         }
       ],
