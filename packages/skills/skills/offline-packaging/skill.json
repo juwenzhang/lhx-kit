@@ -7,6 +7,7 @@
   "triggers": ["offline build", "hybrid package", "create offline zip", "mobile app webview", "lhx-cli offline"],
   "globs": ["offline.config.ts", "project.config.ts"],
   "alwaysApply": false,
+  "command": "lhx-cli offline build [--hybrid-type=test|prod] [--no-zip] [--skip-build]",
   "references": [
     { "title": "Offline packaging overview", "url": "https://juwenzhang.github.io/lhx-kit/offline/overview" }
   ]

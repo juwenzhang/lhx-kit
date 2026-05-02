@@ -23,6 +23,13 @@ import {z} from 'zod';
  *   - alwaysApply:  When true, Cursor's `alwaysApply: true` frontmatter is
  *                   emitted. Reserve for cross-cutting skills (conventions).
  *   - references:   Related doc URLs (our rspress site). Appended to output.
+ *   - command:      Optional. When a skill maps onto a concrete `lhx-cli`
+ *                   invocation, authors may declare the canonical form here
+ *                   (e.g. `lhx-cli add package <name>`). Behaviour-type skills
+ *                   (add-page, offline-packaging, create-package) should fill
+ *                   this so agents know which CLI command to prefer over
+ *                   hand-editing. Knowledge-only skills (troubleshooting,
+ *                   mobile-adaptation) leave it undefined.
  */
 export const SkillManifestSchema = z.object({
   name: z.string().regex(/^[a-z][a-z0-9-]*$/),
@@ -40,7 +47,8 @@ export const SkillManifestSchema = z.object({
         url: z.string().url()
       })
     )
-    .default([])
+    .default([]),
+  command: z.string().min(1).optional()
 });
 
 export type SkillManifest = z.infer<typeof SkillManifestSchema>;

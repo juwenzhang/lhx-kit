@@ -7,6 +7,7 @@
   "triggers": ["add a page", "new page", "create a page", "add route", "new route"],
   "globs": ["project.config.ts", "src/pages/**"],
   "alwaysApply": false,
+  "command": "lhx-cli add page <name> [--title=<text>] [--offline]",
   "references": [
     { "title": "Getting started", "url": "https://juwenzhang.github.io/lhx-kit/guide/getting-started" },
     { "title": "CLI add page", "url": "https://juwenzhang.github.io/lhx-kit/cli/reference#add-page" }

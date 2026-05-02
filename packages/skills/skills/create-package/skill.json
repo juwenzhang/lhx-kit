@@ -1,0 +1,31 @@
+{
+  "name": "create-package",
+  "title": "Create a New Package in a Monorepo",
+  "description": "Scaffold a new publishable workspace under packages/<name> with sensible defaults — tsup ESM build, @lhx-kit/tsconfig extension, files whitelist, publishConfig.access=public, bilingual README, MIT LICENSE. Prefer the CLI over hand-editing: lhx-cli add package <name> enforces naming rules, scope detection, and monorepo-root validation in one shot.",
+  "version": "0.1.0",
+  "tags": ["package", "monorepo", "scaffold", "publish", "cli", "changesets"],
+  "triggers": [
+    "create a new package",
+    "add a package",
+    "new workspace",
+    "new monorepo package",
+    "scaffold package",
+    "新包",
+    "新建一个包",
+    "加一个包"
+  ],
+  "globs": ["packages/**", "pnpm-workspace.yaml"],
+  "alwaysApply": false,
+  "command": "lhx-cli add package <name> [--description=<text>] [--force]",
+  "references": [
+    {
+      "title": "Release pipeline: Changesets + Trusted Publishing",
+      "url": "https://juwenzhang.github.io/lhx-kit/engineering/release-pipeline"
+    },
+    {
+      "title": "Project walkthrough: full setup from scratch",
+      "url": "https://juwenzhang.github.io/lhx-kit/guide/project-walkthrough"
+    },
+    { "title": "CLI add package reference", "url": "https://juwenzhang.github.io/lhx-kit/cli/reference#add-package" }
+  ]
+}
