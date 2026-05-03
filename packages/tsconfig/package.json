@@ -1,6 +1,6 @@
 {
   "name": "@lhx-kit/tsconfig",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared TypeScript configuration presets for the lhx-kit monorepo (base/library/react/vue/node). Designed so packages can `extends` via Node resolution — works identically before AND after npm publish.",
   "keywords": [
     "lhx-kit",
