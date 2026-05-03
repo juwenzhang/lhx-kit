@@ -18,5 +18,7 @@ set -e
 echo "🎨 pre-push: biome check across the repo..."
 pnpm exec biome check .
 
-echo "🔍 pre-push: running typecheck across all workspaces..."
-pnpm -r --if-present --parallel typecheck
+echo "🔍 pre-push: running typecheck across packages/* ..."
+# Only packages/* — mirrors the CI typecheck filter. examples/* are
+# demo code; their TS health is nice-to-have, not a release gate.
+pnpm -r --if-present --parallel --filter='./packages/*' typecheck

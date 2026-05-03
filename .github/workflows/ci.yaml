@@ -161,11 +161,15 @@ jobs:
         # --prefer-offline 保证不走网络。
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Typecheck all workspaces
-        # `--if-present` means packages without a `typecheck` script are
-        # silently skipped. examples/* intentionally don't declare one
-        # any more — they're user-facing samples, not part of CI truth.
-        run: pnpm -r --if-present --parallel typecheck
+      - name: Typecheck packages
+        # Only typecheck packages/* — they are the release contract and
+        # must stay clean. examples/* declare typecheck scripts of their
+        # own (tsc / vue-tsc) for local smoke-testing, but they are
+        # NOT a publishing gate: their TS errors must not block a
+        # package release. Including them here was the source of two
+        # previous false-positive CI reds when experimental code landed
+        # under examples/ before packages/* was ready for it.
+        run: pnpm -r --if-present --parallel --filter='./packages/*' typecheck
 
   # ──────────────────────────────────────────────────────
   # 跨平台兼容性（Ubuntu / macOS / Windows 上 packages/* 能否构建）
