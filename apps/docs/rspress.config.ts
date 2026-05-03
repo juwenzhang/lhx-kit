@@ -129,6 +129,7 @@ export default defineConfig({
             {text: '🚀 发布流水线：Changesets + Trusted Publishing', link: '/engineering/release-pipeline'},
             {text: '⚙️ CI 策略：paths / 跨平台 / frozen / pre-push', link: '/engineering/ci-strategy'},
             {text: '🤖 GitHub AI 自动流（零成本）', link: '/engineering/ai-automation'},
+            {text: '🎯 AI 协作策略：多模型 review + 受控修复', link: '/engineering/ai-review-strategy'},
             {text: '🔧 GitHub CLI 实战手册', link: '/engineering/gh-cli-guide'}
           ]
         }

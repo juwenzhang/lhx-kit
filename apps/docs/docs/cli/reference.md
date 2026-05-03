@@ -16,6 +16,7 @@
 | [`doctor`](#doctor) | 🩺 环境 + 项目诊断 |
 | [`offline`](#offline) | 📦 离线包相关子命令 |
 | [`skills`](#skills) | 🧠 AI 编程助手的 skill 包管理（Cursor / CodeBuddy / Claude / plain） |
+| [AI bot 命令](#ai-bot) | 💬 `@bot-fix-lint` / `@ai-bot fix` / `@ai-docs draft/polish` 等评论触发的 AI workflow |
 | [`upgrade`](#upgrade) | ⬆️ 升级项目（规划中） |
 
 ---
@@ -530,7 +531,58 @@ fork 一下 `packages/skills/skills/add-page/`，改 `skill.json` + `SKILL.md`�
 
 ---
 
-## 十、⬆️ upgrade {#upgrade}
+## 十、💬 AI bot 触发命令 {#ai-bot}
+
+lhx-kit 仓库里跑着 **8 条 AI workflow**（3 条 issue 自动化 + 5 条 PR/文档扩展）。
+它们的触发命令是**评论里的特殊前缀**，不是 `lhx-cli` 子命令——但在命令层面
+值得作为独立小节收录，方便新贡献者翻查。
+
+完整设计见 [🎯 AI 协作策略](../engineering/ai-review-strategy) 和 [🤖 GitHub AI 自动流](../engineering/ai-automation)。
+
+### 10.1 PR 里的命令
+
+| 命令 | 作用 | 权限 |
+| --- | --- | --- |
+| `@bot-fix-lint` | 用 Biome 确定性自动修复当前 PR 分支（无 LLM，安全） | OWNER / MEMBER / COLLABORATOR |
+| _(无命令)_ | 每个 PR 打开 / push 时自动 | 自动出 **GPT-4o** + **Gemini 2.5** 两条 review 评论 |
+
+### 10.2 Issue 里的命令
+
+| 命令 | 作用 | 权限 |
+| --- | --- | --- |
+| `@ai-bot <问题>` | 上下文感知问答（读 README + issue + 最近 5 条评论） | 所有人 |
+| `@ai-bot fix <指令>` | AI 起草代码修复 → 自检 → 开 Draft PR | OWNER / MEMBER / COLLABORATOR |
+| `@ai-docs draft <topic>` | AI 起草新文档文章 → 开 Draft PR | OWNER / MEMBER / COLLABORATOR |
+| `@ai-docs polish <path>` | AI 润色已有 `apps/docs/docs/*.md` → 开 Draft PR | OWNER / MEMBER / COLLABORATOR |
+| _(无命令)_ | 新 issue 自动分类 + 打标签 + 欢迎评论 | 自动 |
+| 打 `ai-summary` 标签 | 生成结构化 TL;DR | OWNER / MEMBER / COLLABORATOR |
+
+### 10.3 示例
+
+```text
+# 在 PR 的评论框里
+@bot-fix-lint
+
+# 在 Issue 的评论框里
+@ai-bot 这个错误可能是什么原因？
+
+@ai-bot fix 把 @lhx-kit/offline 的 hashConcurrency 默认值改成 8，原因见 issue #42
+
+@ai-docs draft 对比 tsup / unbuild / rollup-tsc 各自适合什么场景
+
+@ai-docs polish apps/docs/docs/offline/packaging-deep-dive.md
+```
+
+### 10.4 安全语义
+
+- **`@bot-fix-lint` / `@ai-docs` / `@ai-bot fix`** 都**只响应 collaborator 级别**以上的评论
+- **自动改代码的命令** 一律开 **draft PR**，不会自动 ready-for-review
+- **所有 AI 评论** 末尾都有 🤖 签名，可通过 `!contains(comment.body, '🤖')` 过滤机器人循环
+- 详细安全门设计见 [AI 协作策略 → ai-code-fix 的 4 层安全门](../engineering/ai-review-strategy)
+
+---
+
+## 十一、⬆️ upgrade {#upgrade}
 
 占位命令，规划中。将来会做：
 
@@ -540,7 +592,7 @@ fork 一下 `packages/skills/skills/add-page/`，改 `skill.json` + `SKILL.md`�
 
 ---
 
-## 十一、📦 CLI 自身依赖
+## 十二、📦 CLI 自身依赖
 
 | 依赖 | 用途 |
 | --- | --- |
@@ -568,7 +620,7 @@ fork 一下 `packages/skills/skills/add-page/`，改 `skill.json` + `SKILL.md`�
 
 ---
 
-## 十一、🎯 bin.ts 入口
+## 十三、🎯 bin.ts 入口
 
 ```ts title="packages/cli/src/bin.ts"
 #!/usr/bin/env node
@@ -588,7 +640,7 @@ cli(process.argv.slice(2));
 
 ---
 
-## 十三、📖 相关资源
+## 十四、📖 相关资源
 
 - [🚀 快速开始](../guide/getting-started) — create / add page 实战
 - [📦 离线打包](../offline/overview) — offline 子命令完整说明

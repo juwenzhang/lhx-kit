@@ -43,6 +43,17 @@ GitHub Actions 怎么配才既快又准：
 - 防死循环 / 防滥用 / 透明性签名的具体实践
 - 升级路径：从轻量 → 自动 review → 真改代码（Claude Code Action / Copilot Coding Agent）
 
+### [🎯 AI 协作策略：多模型 review + 受控修复](./ai-review-strategy)
+
+把 AI 能力从 "issue 处理" 扩到 "PR review + 自动改代码"。新增 5 条 workflow 的设计全解：
+
+- **双模型 PR review**：GPT-4o 主审 + Gemini 2.5 交叉视角，分歧就是信号
+- **确定性 autofix**（`@bot-fix-lint`）：用 Biome 不用 LLM，零不确定性
+- **受控 AI 改代码**（`@ai-bot fix`）：4 层安全门 + 自检 + 一次重试 + Draft PR
+- **AI 文档助手**（`@ai-docs draft/polish`）：自动起草 / 润色 rspress 文档
+- prompt 设计的 3 个常见陷阱 + 10 秒钟 AI 反馈流时序图
+- 5 条 workflow 共享的设计哲学：**用确定性解决确定性问题，用 AI 处理不确定性问题，用人审核最终产出**
+
 ### [🔧 GitHub CLI 实战手册](./gh-cli-guide)
 
 按使用场景组织的 `gh` 命令速查，lhx-kit 日常仓库运维 90% 操作不用开浏览器：

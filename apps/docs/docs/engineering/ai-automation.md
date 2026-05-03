@@ -371,11 +371,11 @@ gh label list --limit 100 --json name | jq '.[].name' | sort
 | 阶段 | 方案 | 能力 |
 |---|---|---|
 | **本篇**（已完成） | GitHub Models + 3 个轻量 workflow | 分类 / 问答 / 总结 |
-| 下一步 | 加 `ai-code-review.yaml` 用 GitHub Models 对 PR diff 做 review 建议 | 自动 review（不改代码） |
-| 进阶 | 接入 [anthropics/claude-code-action](https://github.com/anthropics/claude-code-action) | AI 能读代码、开 PR、改代码 |
+| **下一步**（已完成 ✅） | [多模型 PR review + AI 改代码（见"AI 协作策略"）](./ai-review-strategy) | 双 AI 评审 + 确定性 autofix + 受控 AI 修复 + AI 文档助手 |
+| 进阶 | 接入 [anthropics/claude-code-action](https://github.com/anthropics/claude-code-action) | 升级某条 workflow 用 Claude 3.5 Sonnet（需 API key，$5-10/月） |
 | 企业版 | 开 Copilot Enterprise + Coding Agent | 真正的 AI 工程师，@Copilot 派任务 |
 
-每一阶能力强度翻倍，但**复杂度和成本也翻倍**。开源项目停在本篇的 3 个 workflow 就是最佳性价比。
+每一阶能力强度翻倍，但**复杂度和风险面也扩大**。升级路线请仔细读 [AI 协作策略](./ai-review-strategy) 里的"安全门"和"prompt 陷阱"两节再落地。
 
 ---
 
