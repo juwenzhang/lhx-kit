@@ -2,9 +2,32 @@
 
 > 2024 年底 GitHub 悄悄上线了 **GitHub Models**——给所有仓库提供**免费**的 LLM API（GPT-4o、Claude Sonnet、Llama 等），workflow 里只要加一行 `permissions: models: read` 就能调用。
 >
-> 本篇讲如何用这个能力**零成本**给 lhx-kit 仓库接入 3 条 AI 自动流：新 issue 自动打标签 + 评论 `@ai-bot` 回答问题 + 打 `ai-summary` 标签做长讨论总结。
+> 本篇讲如何用这个能力**零成本**给 lhx-kit 仓库接入 3 条**基础** AI 自动流：新 issue 自动打标签 + 评论 `@ai-bot` 回答问题 + 打 `ai-summary` 标签做长讨论总结。
+>
+> 📌 **只想知道"怎么用"（命令 / 触发位置 / 排错）？** 直接看 [🎮 AI 命令使用手册](./ai-commands) —— 那是用户视角的速查；本篇是**实现视角**的 YAML 深度讲解。
+> 📌 **想了解后续扩展的 5 条 workflow（双模型 PR review / autofix / code-fix / docs）？** 见 [🎯 AI 协作策略](./ai-review-strategy)。
 
 ---
+
+## 🧭 8 条 AI workflow 全景
+
+lhx-kit 现在一共有 **8 条 AI workflow**，本篇讲前 3 条基础的，其余 5 条详见[对应篇目](./ai-review-strategy)：
+
+| # | Workflow | 触发 | 本篇覆盖 |
+|---|---|---|---|
+| 1 | `ai-triage.yaml` | 新 issue 打开 | ✅ 本篇 |
+| 2 | `ai-assistant.yaml` | `@ai-bot <问题>` | ✅ 本篇 |
+| 3 | `ai-summarize.yaml` | 打 `ai-summary` label | ✅ 本篇 |
+| 4 | `ai-review-gpt.yaml` | PR 事件 | → [ai-review-strategy](./ai-review-strategy) |
+| 5 | `ai-review-gemini.yaml` | PR 事件 | → [ai-review-strategy](./ai-review-strategy) |
+| 6 | `ai-autofix.yaml` | `@bot-fix-lint` (PR) | → [ai-review-strategy](./ai-review-strategy) |
+| 7 | `ai-code-fix.yaml` | `@ai-bot fix <...>` (issue) | → [ai-review-strategy](./ai-review-strategy) |
+| 8 | `ai-docs-assistant.yaml` | `@ai-docs draft/polish ...` | → [ai-review-strategy](./ai-review-strategy) |
+
+**所有 8 条都跑在 [GitHub Models](https://docs.github.com/en/github-models) 上，公开仓库免费、零 API key。**
+
+---
+
 
 ## 🎯 为什么是 GitHub Models，而不是自己接 OpenAI / Claude
 
@@ -404,8 +427,11 @@ gh label list --limit 100 --json name | jq '.[].name' | sort
 ## 📖 专栏内其他文章
 
 - [🛠️ 工程化总览](./overview)
+- [🎮 AI 命令使用手册（8 条 workflow 速查）](./ai-commands)
+- [🎯 AI 协作策略：多模型 review + 受控修复](./ai-review-strategy)
 - [🚀 发布流水线：Changesets + Trusted Publishing](./release-pipeline)
 - [⚙️ CI 策略](./ci-strategy)
+- [🔧 GitHub CLI 实战手册](./gh-cli-guide)
 
 ---
 

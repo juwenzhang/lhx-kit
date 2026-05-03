@@ -60,6 +60,7 @@ export default defineConfig({
       {text: '🎨 Renderer', link: '/renderer/overview'},
       {text: '📦 Offline', link: '/offline/overview'},
       {text: '🛠️ 工程化', link: '/engineering/overview'},
+      {text: '🎮 AI 命令', link: '/engineering/ai-commands'},
       {text: '🧱 模板', link: '/templates/catalogue'},
       {text: '❓ FAQ', link: '/reference/faq'}
     ],
@@ -130,6 +131,7 @@ export default defineConfig({
             {text: '⚙️ CI 策略：paths / 跨平台 / frozen / pre-push', link: '/engineering/ci-strategy'},
             {text: '🤖 GitHub AI 自动流（零成本）', link: '/engineering/ai-automation'},
             {text: '🎯 AI 协作策略：多模型 review + 受控修复', link: '/engineering/ai-review-strategy'},
+            {text: '🎮 AI 命令使用手册（8 条 workflow 速查）', link: '/engineering/ai-commands'},
             {text: '🔧 GitHub CLI 实战手册', link: '/engineering/gh-cli-guide'}
           ]
         }

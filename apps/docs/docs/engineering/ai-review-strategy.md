@@ -270,6 +270,7 @@ concurrency:
 ## 📚 相关文档
 
 - [🛠️ 工程化总览](./overview)
+- [🎮 AI 命令使用手册（8 条 workflow 速查）](./ai-commands) — 用户视角的命令速查 / 排错
 - [🤖 GitHub AI 自动流基础](./ai-automation) — 最初的 3 条 issue 自动化 workflow
 - [🚀 发布流水线](./release-pipeline)
 - [⚙️ CI 策略](./ci-strategy)
