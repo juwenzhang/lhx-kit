@@ -1,76 +1,93 @@
-# 🎯 AI 协作策略：多模型评审 + 受控自动修复
+# 🎯 AI 协作策略：三模型评审 + 受控自动修复
 
-> 在 lhx-kit 仓库里，**5 条 AI workflow 组成了一条完整的"AI 协作流水线"**。本文讲清楚每条 workflow 的边界、选型背后的 trade-off，以及 prompt 设计里容易踩的坑。不是 "怎么接 LLM"，而是 **"多 AI 协作在真实 OSS 项目里怎么落地才不翻车"**。
+> 在 lhx-kit 仓库里，**6 条 AI workflow 组成了一条完整的"AI 协作流水线"**。本文讲清楚每条 workflow 的边界、选型背后的 trade-off，以及 prompt 设计里容易踩的坑。不是 "怎么接 LLM"，而是 **"多 AI 协作在真实 OSS 项目里怎么落地才不翻车"**。
 
 ---
 
-## 🗺️ 全景：5 条 workflow 的分工
+## 🗺️ 全景：6 条 workflow 的分工
 
 ```
-               PR 事件                       Issue 事件
-┌────────────────────────────────┬────────────────────────────────┐
-│  ai-review-gpt.yaml (GPT-4o)   │  ai-triage.yaml                │
-│  → 通用 review 评论             │  → 新 issue 自动分类 + 欢迎     │
-│                                │                                │
-│  ai-review-gemini.yaml (Gemini)│  ai-assistant.yaml             │
-│  → 跨文件 / 文档视角 review    │  → @ai-bot 问答                 │
-│                                │                                │
-│  ai-autofix.yaml (无 LLM)      │  ai-summarize.yaml             │
-│  → @bot-fix-lint 确定性修复    │  → 标签触发长讨论 TL;DR         │
-│                                │                                │
-│                                │  ai-code-fix.yaml (GPT-4o)     │
-│                                │  → @ai-bot fix 受控代码修改     │
-│                                │                                │
-│                                │  ai-docs-assistant.yaml (GPT-4o)│
-│                                │  → @ai-docs draft / polish     │
-└────────────────────────────────┴────────────────────────────────┘
+                 PR 事件                           Issue 事件
+┌─────────────────────────────────┬────────────────────────────────┐
+│  ai-review-gpt.yaml (GPT-4o)    │  ai-triage.yaml                │
+│  → 正确性 / 安全 / 破坏性变更   │  → 新 issue 自动分类 + 欢迎     │
+│                                 │                                │
+│  ai-review-llama.yaml (Llama)   │  ai-assistant.yaml             │
+│  → 跨文件 / 文档 / 命名一致性   │  → @ai-bot 问答                 │
+│                                 │                                │
+│  ai-review-deepseek.yaml (DS V3)│  ai-summarize.yaml             │
+│  → 边界条件 / 推理链 / 测试覆盖 │  → 标签触发长讨论 TL;DR         │
+│                                 │                                │
+│  ai-autofix.yaml (无 LLM)       │  ai-code-fix.yaml (GPT-4o)     │
+│  → @bot-fix-lint 确定性修复     │  → @ai-bot fix 受控代码修改     │
+│                                 │                                │
+│                                 │  ai-docs-assistant.yaml (GPT-4o)│
+│                                 │  → @ai-docs draft / polish     │
+└─────────────────────────────────┴────────────────────────────────┘
 ```
 
 ### 能力矩阵
 
 | Workflow | 触发 | 模型 | 写代码? | 开 PR? | 成本 |
 |---|---|---|---|---|---|
-| `ai-review-gpt` | PR 事件 | GPT-4o | ❌ | ❌（只评论） | 🟢 免费 |
-| `ai-review-gemini` | PR 事件 | Gemini 2.5 | ❌ | ❌（只评论） | 🟢 免费 |
+| `ai-review-gpt` | PR 事件 | `openai/gpt-4o` | ❌ | ❌（只评论） | 🟢 免费 |
+| `ai-review-llama` | PR 事件 | `meta/llama-3.3-70b-instruct` | ❌ | ❌（只评论） | 🟢 免费 |
+| `ai-review-deepseek` | PR 事件 | `deepseek/deepseek-v3-0324` | ❌ | ❌（只评论） | 🟢 免费 |
 | `ai-autofix` | `@bot-fix-lint` | **无 LLM** | ✅ Biome 确定性 | 提交到 PR 分支 | 🟢 免费 |
-| `ai-code-fix` | `@ai-bot fix` | GPT-4o | ✅ AI 生成 | **Draft** PR | 🟢 免费 |
-| `ai-docs-assistant` | `@ai-docs` | GPT-4o | ✅ MD 生成 | **Draft** PR | 🟢 免费 |
-| `ai-triage` / `ai-assistant` / `ai-summarize` | Issue 事件 | GPT-4o-mini | ❌ | ❌ | 🟢 免费 |
+| `ai-code-fix` | `@ai-bot fix` | `openai/gpt-4o` | ✅ AI 生成 | **Draft** PR | 🟢 免费 |
+| `ai-docs-assistant` | `@ai-docs` | `openai/gpt-4o` | ✅ MD 生成 | **Draft** PR | 🟢 免费 |
+| `ai-triage` / `ai-assistant` / `ai-summarize` | Issue 事件 | `openai/gpt-4o-mini` | ❌ | ❌ | 🟢 免费 |
 
 **所有 workflow 都跑在 [GitHub Models](https://docs.github.com/en/github-models) 上，公开仓库完全免费、零 API key**。
 
 ---
 
-## 🧠 为什么是 GPT-4o + Gemini 双 reviewer？
+## 🧠 为什么是 GPT-4o + Llama + DeepSeek 三个 reviewer？
 
 ### 选型理由
 
-表面答案："多一个视角不容易漏"。**真实答案**更有意思：
+三个 AI 同时 review 的价值**不是三倍覆盖率**，而是 **"跨 publisher 的分歧信号"**：
 
-> 两个 AI 同时 review 的**最大价值不是两倍覆盖率，而是"分歧信号"**——
-> 当它们对同一行代码给出**相反判断**时，真人 review 就知道"这里值得多看一眼"。
+> 它们各自来自 **OpenAI / Meta / DeepSeek** 三个完全不同的训练 pipeline——不同的预训练语料、不同的 RLHF 策略、不同的推理倾向。
+> 当它们对同一行代码给出**相反判断**时，真人 review 就知道"这里值得多看一眼"；
 > 当它们**高度一致**时，你对那条建议的信心就该翻倍。
 
-这是一种很低成本的**集成学习（ensemble）**——不需要训练，不需要融合逻辑，让两个模型各自跑，**把"比对"的工作交给人**。
+这是一种很低成本的**跨家族集成（cross-family ensemble）**——不需要训练、不需要融合逻辑，让三个模型各自跑，**把"比对"的工作交给人**。
 
-### 为什么不是三个或更多？
+### 三个模型的分工（刻意错位）
 
-- **边际收益递减**：第三个模型 70% 的建议会和前两个重叠
-- **信号噪声比下降**：PR 评论区出现 3+ 条机器人消息会淹没真人 review
-- **两个已经能产出"分歧表"**：三个模型的分歧矩阵反而更难读
+为了让三条评论**互补而非重复**，我们给每个模型写了**主题不同**的 system prompt：
 
-所以 **"2 正好，3 过多"** 在实操中反复验证过。如果你真需要多视角，宁可**在系统 prompt 里让一个模型扮演多个角色**，而不是真的拉三个模型。
+| 模型 | 主题 prompt 聚焦 | 输出常见特征 |
+|---|---|---|
+| **GPT-4o**（generalist） | 正确性、安全、破坏性、verdict | 条理分明的 bullets，verdict 明确 |
+| **Llama 3.3 70B**（open weights） | 跨文件架构、文档、命名一致性 | 爱谈 "下游影响" 和 "是否需要改 README" |
+| **DeepSeek V3**（reasoning） | 边界条件、推理链、测试覆盖 | "if X then Y" 风格，会找 off-by-one |
+
+**刻意避免重叠**是关键——如果三个模型都盯正确性，你会得到三条几乎一模一样的评论，反而淹没真人 review。
+
+### 为什么不是 4 个、5 个？
+
+- **边际收益递减**：第 4 个模型 70% 的建议会和前三个重叠
+- **信号噪声比下降**：PR 评论区出现 4+ 条机器人消息会淹没真人 review
+- **三个已经能产出"分歧矩阵"**：OpenAI ↔ Meta、OpenAI ↔ DeepSeek、Meta ↔ DeepSeek 三组比对，足够人类 triage
+
+所以 **"3 正好，4 过多"** 在实操中反复验证过。
 
 ### 为什么不用 Claude？
 
 Claude 3.5 Sonnet 的 code review 能力确实最强（2026 年 5 月为止的体验），但：
 
-- 它在 GitHub Models 里**没有免费通道**
+- 它在 GitHub Models 里**没有免费通道**（catalog 里完全没有 Anthropic）
 - 必须配 `ANTHROPIC_API_KEY`，按 token 计费约 $0.03-0.08 一次 review
-- 单人 / 小团队的 lhx-kit，**GPT-4o 的质量完全够用**
-- 如果你愿意付费 $5-10/月，可以替换 GPT-4o 为 Claude 3.5 Sonnet 走 [claude-code-action](https://github.com/anthropics/claude-code-action)
+- 单人 / 小团队的 lhx-kit，**GPT-4o + Llama + DeepSeek 的组合质量完全够用**
+- 如果你愿意付费 $5-10/月，可以替换其中一个模型为 Claude 3.5 Sonnet 走 [claude-code-action](https://github.com/anthropics/claude-code-action)
 
 **选型原则**：免费版够用时不上付费版；什么时候真感觉"质量吃亏了"再升级，别提前花钱。
+
+### 为什么不是 Gemini？
+
+早期版本的这套 workflow 里曾经用过 `google/gemini-2.5-flash` 做 second opinion。**2026 年 5 月起 GitHub Models catalog 里不再有任何 Google Gemini 模型**（`gh api /catalog/models` 验证可见）—— 所以我们切到了 Meta Llama 3.3 70B 作为替代。这也是一个提醒：**模型 ID 不是 API 契约**，GitHub Models 的 catalog 会变，workflow 里写死模型 ID 时最好在 PR 描述里解释原因，未来移除才好排查。
 
 ---
 
@@ -178,7 +195,7 @@ raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
 ### 陷阱 3：忘记 bot-loop 防护
 
 典型错误：
-- `ai-review-gpt` 评论后 → `ai-review-gemini` 把它当作 PR 新评论 → 再 review 一次 → 无限循环
+- `ai-review-gpt` 评论后 → `ai-review-llama` / `ai-review-deepseek` 把它当作 PR 新评论 → 再 review 一次 → 无限循环
 - `ai-triage` 欢迎评论被 `ai-triage` 再次 triage
 
 **三条必配的防护**：
@@ -199,7 +216,7 @@ concurrency:
 
 ## 📊 典型 PR 的 AI 反馈流
 
-假设一个 PR 打开，你会在 10~60 秒内看到：
+假设一个 PR 打开，你会在 10~90 秒内依次看到三条 review：
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -218,7 +235,6 @@ concurrency:
 │                                                  │
 │  ## ⚠️ Concerns                                  │
 │  - packages/cli/src/commands/dev.ts:42 ...       │
-│  ...                                             │
 │                                                  │
 │  — 🤖 GPT-4o review via GitHub Models            │
 └──────────────────────────────────────────────────┘
@@ -232,7 +248,27 @@ concurrency:
 │  - The --watch flag bypasses existing            │
 │    project.config.ts validation; see ...         │
 │                                                  │
-│  — 🤖 Gemini second-opinion via GitHub Models    │
+│  — 🤖 Llama 3.3 70B second-opinion via GitHub    │
+│        Models                                    │
+└──────────────────────────────────────────────────┘
+
+   ⬇ 30s
+
+┌──────────────────────────────────────────────────┐
+│ 🤖 lhx-kit-bot commented                         │
+│                                                  │
+│  ## 🧠 Edge cases & invariants                   │
+│  - What happens if --watch is passed without     │
+│    a matching project.config.ts section?         │
+│                                                  │
+│  ## 🧪 Test coverage gaps                        │
+│  - No test currently asserts ...                 │
+│                                                  │
+│  ## 🤝 Agreement check                           │
+│  - Confirms Llama's point about config bypass    │
+│                                                  │
+│  — 🤖 DeepSeek V3 reasoning lens via GitHub      │
+│        Models                                    │
 └──────────────────────────────────────────────────┘
 ```
 

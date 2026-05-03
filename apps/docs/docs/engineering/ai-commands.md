@@ -11,11 +11,12 @@
 | 想做什么 | 在哪 | 敲什么 | 谁能触发 | 响应时间 |
 |---|---|---|---|---|
 | 新建 issue 自动分类 + 打标签 + 欢迎 | 打开 issue 即触发 | 不用敲，**自动** | 任何人 | ~30s |
-| 给长 issue 讨论做 TL;DR 总结 | 给 issue 打 **label** | `ai-summary` | 有 label 权限的人 | ~30s |
+| 给长 issue / PR 讨论做 TL;DR 总结 | 给目标打 **label** | `ai-summary` | 有 label 权限的人 | ~30s |
 | 在 issue / PR 问技术问题 | 评论 | `@ai-bot <你的问题>` | 任何人 | ~10-20s |
 | 让 AI 起草代码修改并开 Draft PR | **issue** 评论 | `@ai-bot fix <具体指令>` | OWNER / MEMBER / COLLABORATOR | ~60-120s |
 | PR 自动 review（GPT-4o 主审） | PR 打开 / push 即触发 | 不用敲，**自动** | PR 作者不是陌生人即可 | ~15s |
-| PR 自动 review（Gemini 交叉视角） | PR 打开 / push 即触发 | 不用敲，**自动** | 同上 | ~20s |
+| PR 自动 review（Llama 架构视角） | PR 打开 / push 即触发 | 不用敲，**自动** | 同上 | ~25s |
+| PR 自动 review（DeepSeek 推理视角） | PR 打开 / push 即触发 | 不用敲，**自动** | 同上 | ~35s |
 | 让 Biome 自动格式化当前 PR 分支 | **PR** 评论 | `@bot-fix-lint` | OWNER / MEMBER / COLLABORATOR | ~30s |
 | 起草一篇新文档（MD） | issue 评论 | `@ai-docs draft <主题>` | OWNER / MEMBER / COLLABORATOR | ~60s |
 | 润色一篇现有文档 | issue 评论 | `@ai-docs polish apps/docs/docs/<相对路径>` | OWNER / MEMBER / COLLABORATOR | ~60s |
@@ -106,9 +107,9 @@ Hey @ai-bot help                ← @ai-bot 必须在行首
 
 ### 3. `ai-summary` label — 长讨论串 TL;DR
 
-**什么时候用**：一个 issue 超过 15 条评论、讨论分散，想生成结构化摘要。
+**什么时候用**：一个 issue 或 PR 超过 15 条评论、讨论分散，想生成结构化摘要。
 
-**怎么触发**：给 issue **打 label** `ai-summary`（不是评论！）。
+**怎么触发**：给目标 issue **或 PR** 打 label `ai-summary`（不是评论！）。issue 和 PR 都支持，共享同一套逻辑。
 
 **会看到什么**（~30 秒）：
 
@@ -176,17 +177,77 @@ Hey @ai-bot help                ← @ai-bot 必须在行首
 
 ---
 
-### 5. `ai-review-gemini` — Gemini 交叉视角（自动）
+### 5. `ai-review-llama` — Llama 架构视角（自动）
 
-**同样自动触发**，**同样 PR 条件**，但模型换成 `google/gemini-2.5-flash`。
+**同样自动触发**，**同样 PR 条件**，但模型换成 `meta/llama-3.3-70b-instruct`（Meta 的开源旗舰）。
 
-**关注重点**：DX、命名、文档覆盖、跨文件架构影响。
+**关注重点**：跨文件影响、文档覆盖、命名一致性。
 
-**为什么要两个**：不是两倍覆盖率，是 **"分歧信号"**——两个 AI 对同一行给相反判断时，人类 reviewer 就知道 "这里值得多看一眼"。详见 [ai-review-strategy §为什么是双 reviewer](./ai-review-strategy)。
+**会看到什么**（约 25 秒）：
+
+```markdown
+## 🧭 Cross-file / architectural observations
+- The new `debugDump` helper in `packages/runtime/src/logger.ts` is exported
+  but not re-exported from `packages/runtime/src/index.ts` — downstream
+  consumers can't import it.
+
+## 📝 Documentation & comments
+- `formatTimestamp` lacks a TSDoc block describing the accepted `ts` formats.
+
+## 🏷️ Naming & consistency
+- `debugDump` mixes camelCase with verb+noun — fine — but other log helpers
+  in this file use `create*` prefix. Consider consistency.
+
+## 🔁 Potential ripple effects
+- `packages/runtime/README.md` "Logger API" section would need a new row.
+
+— 🤖 Llama 3.3 70B second-opinion via GitHub Models
+```
 
 ---
 
-### 6. `@bot-fix-lint` — Biome 确定性自动修复
+### 6. `ai-review-deepseek` — DeepSeek 推理视角（自动）
+
+**同样自动触发**，**同样 PR 条件**，模型是 `deepseek/deepseek-v3-0324`。
+
+**关注重点**：边界条件、推理链、测试覆盖缺口。这是三个 reviewer 中**最"adversarial"**的一个——专门挑你没考虑到的输入。
+
+**会看到什么**（约 35 秒）：
+
+```markdown
+## 🧠 Edge cases & invariants
+- `formatTimestamp(ts)`: when `ts` is an invalid string like "hello",
+  `new Date("hello")` produces `Invalid Date`, and `.toISOString()` throws
+  `RangeError`. The `// TODO: handle invalid dates` comment acknowledges
+  this but doesn't fix it.
+- `debugDump(logger, payload)`: `JSON.stringify` throws on circular
+  references — which is common for logger payloads that include DOM nodes.
+
+## 🧪 Test coverage gaps
+- No test in `packages/runtime/tests/logger.test.ts` exercises the new
+  helpers. Smallest additions:
+  1. `formatTimestamp(NaN)` should throw or return sentinel
+  2. `debugDump(logger, {a: {b: <circular>}})` should not crash
+
+## 🔢 Algorithmic / correctness concerns
+- `ts instanceof Date ? ts : new Date(ts as any)` — the `as any` cast
+  hides a type mismatch; `ts: string | number | Date` is already the
+  right type, no cast needed.
+
+## 🤝 Agreement check with other reviewers
+- Confirms Llama's point about missing TSDoc (same root cause: helpers
+  weren't designed with consumers in mind).
+- Possible divergence with GPT — GPT said "formatTimestamp uses Date
+  effectively"; I'd say "it uses Date UNSAFELY".
+
+— 🤖 DeepSeek V3 reasoning lens via GitHub Models
+```
+
+**为什么三个 reviewer 不重复**：每个模型的 **system prompt 刻意错位**。GPT 负责正确性 + 安全，Llama 盯架构 + 文档，DeepSeek 刨边界。详见 [ai-review-strategy §三模型 reviewer](./ai-review-strategy)。
+
+---
+
+### 7. `@bot-fix-lint` — Biome 确定性自动修复
 
 **什么时候用**：PR 里 CI 挂在 biome lint 上，不想本地拉分支再 push。
 
@@ -219,7 +280,7 @@ Hey @ai-bot help                ← @ai-bot 必须在行首
 
 ---
 
-### 7. `@ai-bot fix <指令>` — AI 起草代码修改（Draft PR）
+### 8. `@ai-bot fix <指令>` — AI 起草代码修改（Draft PR）
 
 **这是最危险也最强大的命令**，所以有 **4 层安全门**（见 [ai-review-strategy §4 层安全门](./ai-review-strategy)）。
 
@@ -283,7 +344,7 @@ project.config.ts 的 schema 校验，失败时返回 exit code 2
 
 ## 📝 文档工作流的 2 条命令
 
-### 8. `@ai-docs draft <topic>` — 起草新文档
+### 9. `@ai-docs draft <topic>` — 起草新文档
 
 **什么时候用**：想要一篇新文档（比如"如何写一个 Vite 插件"），但不想从空白 MD 开始。
 
@@ -318,7 +379,7 @@ project.config.ts 的 schema 校验，失败时返回 exit code 2
 
 ---
 
-### 9. `@ai-docs polish <path>` — 原地润色现有文档
+### 10. `@ai-docs polish <path>` — 原地润色现有文档
 
 **什么时候用**：一篇文档读起来混乱、句子冗长、结构散，但**内容本身没问题**，想让 AI 重写而不改意。
 
@@ -392,7 +453,8 @@ project.config.ts 的 schema 校验，失败时返回 exit code 2
 | `ai-summary` label | `🤖 AI Summarize Long Thread` |
 | `@ai-bot fix` | `🤖 AI Code Fix (opt-in, draft PR)` |
 | PR GPT review | `🤖 AI PR Review (GPT-4o primary)` |
-| PR Gemini review | `🤖 AI PR Review (Gemini second opinion)` |
+| PR Llama review | `🤖 AI PR Review (Llama second opinion)` |
+| PR DeepSeek review | `🤖 AI PR Review (DeepSeek reasoning)` |
 | `@bot-fix-lint` | `🔧 Deterministic Autofix (Biome)` |
 | `@ai-docs draft/polish` | `📘 AI Docs Assistant (draft / polish)` |
 
@@ -402,7 +464,8 @@ project.config.ts 的 schema 校验，失败时返回 exit code 2
 
 | Workflow | timeout |
 |---|---|
-| PR review (gpt/gemini) | 5 min |
+| PR review (gpt/llama) | 5 min |
+| PR review (deepseek) | 6 min（推理链输出略长） |
 | Summarize / Triage | 5 min |
 | Assistant | 8 min |
 | Autofix | 10 min |

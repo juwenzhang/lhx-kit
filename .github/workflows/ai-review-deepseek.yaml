@@ -1,19 +1,22 @@
-name: 🤖 AI PR Review (Gemini second opinion)
+name: 🤖 AI PR Review (DeepSeek reasoning)
 
-# Secondary AI PR reviewer — runs alongside ai-review-gpt.yaml with a
-# DELIBERATELY DIFFERENT prompt focus so the two comments complement
-# rather than duplicate each other.
+# Third AI PR reviewer — runs alongside ai-review-gpt and ai-review-llama.
+# Each reviewer has a DELIBERATELY DIFFERENT lens so the three comments
+# complement rather than duplicate each other:
 #
-# GPT review is generalist (verdict + concerns + test coverage).
-# Gemini review focuses on:
-#   - Cross-file and architectural impact (multi-package monorepo is Gemini's strength)
-#   - Documentation / comment completeness
-#   - Naming consistency with rest of codebase
+#   - GPT-4o   → generalist correctness / security / breaking changes
+#   - Llama    → cross-file / architecture / docs / naming
+#   - DeepSeek → step-by-step reasoning, edge cases, testability (THIS FILE)
 #
-# Running both shows where the two models agree (high-confidence finding)
-# vs disagree (worth a human second look).
+# Model: deepseek/deepseek-v3-0324 — DeepSeek's reasoning-leaning model on
+# GitHub Models. It tends to produce more "if X then Y" style walkthroughs,
+# which is the strongest angle for catching boundary bugs that fast skim
+# reviewers miss.
 #
-# Also via GitHub Models → zero cost on public repos.
+# Having three independent voices lets humans use AGREEMENT as a confidence
+# signal and DISAGREEMENT as a "worth a second look" signal.
+#
+# Free on public repos via GitHub Models.
 
 on:
   pull_request:
@@ -25,14 +28,14 @@ permissions:
   models: read
 
 concurrency:
-  group: ai-review-gemini-${{ github.event.pull_request.number }}
+  group: ai-review-deepseek-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   review:
-    name: Gemini review
+    name: DeepSeek review
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.type != 'Bot' &&
@@ -46,7 +49,7 @@ jobs:
           ref: ${{ github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
           fetch-depth: 2
 
-      - name: Collect PR diff + repo context
+      - name: Collect PR diff
         id: diff
         uses: actions/github-script@v7
         with:
@@ -71,17 +74,6 @@ jobs:
               !IGNORE.some(rx => rx.test(f.filename))
             );
 
-            // Group files by top-level directory so Gemini's
-            // cross-package narrative has a clear scaffold to hang on.
-            const byTopLevel = {};
-            for (const f of filtered) {
-              const top = f.filename.split('/').slice(0, 2).join('/');
-              (byTopLevel[top] ??= []).push(f.filename);
-            }
-            const grouped = Object.entries(byTopLevel)
-              .map(([k, v]) => `- **${k}/** (${v.length} files): ${v.slice(0, 5).join(', ')}${v.length > 5 ? ` … +${v.length - 5} more` : ''}`)
-              .join('\n');
-
             const MAX_DIFF_BYTES = 150 * 1024;
             let diff = '';
             for (const f of filtered) {
@@ -95,56 +87,59 @@ jobs:
             }
 
             core.setOutput('diff', diff);
-            core.setOutput('grouped', grouped);
             core.setOutput('file_count', filtered.length);
             core.setOutput('pr_title', pr.title);
             core.setOutput('pr_body', pr.body || '(empty)');
 
-      - name: Call Gemini for cross-file review
+      - name: Call DeepSeek for reasoning-focused review
         id: ai
         uses: actions/ai-inference@v1
         with:
-          # Gemini 2.5 is Google's mid-tier via GitHub Models. We pick it
-          # specifically for multi-file context — its training leans
-          # that way and it's a distinct voice from GPT.
-          model: google/gemini-2.5-flash
+          # DeepSeek V3 0324 is the publicly available V3 checkpoint via
+          # GitHub Models. Its sweet spot is "reason through edge cases
+          # step by step", which is why we use it for the boundary-bug lens.
+          model: deepseek/deepseek-v3-0324
           system-prompt: |
-            You are a second-opinion code reviewer for lhx-kit, focused on
-            SYSTEMIC concerns that single-file reviewers miss.
+            You are the THIRD reviewer on this PR, specializing in RIGOROUS
+            REASONING about edge cases and testability. Two other AI
+            reviewers (GPT and Llama) already cover correctness, security,
+            architecture, and docs. DO NOT repeat what they would say.
 
-            Your output is one Markdown comment with these sections (keep
-            headings exactly; write "—" when a section has nothing to say):
+            Your output is one Markdown comment with these sections
+            (keep headings exactly; write "—" when a section has nothing):
 
-            ## 🧭 Cross-file / architectural observations
+            ## 🧠 Edge cases & invariants
 
-            - Does this change cross package boundaries correctly?
-            - Are new types exported from the right package?
-            - Does it introduce a circular dependency risk?
-            - Does any workspace need a version bump it didn't get?
+            For the new/changed code, think adversarially:
+            - What are the INPUT BOUNDARIES (null / empty / huge / wrong type / NaN)?
+            - What IMPLICIT INVARIANTS can a future caller accidentally break?
+            - Any RACE CONDITIONS / re-entrancy / iteration-during-mutation risks?
+            - Any SILENT FAILURE modes (try/catch swallows, missing `await`, etc.)?
 
-            ## 📝 Documentation & comments
+            ## 🧪 Test coverage gaps
 
-            - Are new public APIs documented (TSDoc / README / apps/docs)?
-            - Are the intent-explaining comments for non-obvious code present?
-            - Does apps/docs need an update this PR forgot?
+            Look at what this diff changes and name the SMALLEST set of
+            unit tests that would have caught a regression. Reference file
+            paths where tests should live (e.g. `packages/runtime/tests/...`).
 
-            ## 🏷️ Naming & consistency
+            ## 🔢 Algorithmic / correctness concerns
 
-            - Do new identifiers match the codebase's conventions
-              (kebab-case dirs, camelCase functions, PascalCase types)?
-            - Are option flags consistent with existing lhx-cli commands?
+            Any off-by-one, incorrect comparator, wrong early-exit, misuse
+            of `Array.prototype.*` that skips holes, etc.? Show the minimal
+            repro input if you can.
 
-            ## 🔁 Potential ripple effects
+            ## 🤝 Agreement check with other reviewers
 
-            Files NOT in this diff that may need follow-up changes. Be specific.
+            - If your finding REINFORCES something GPT/Llama likely said → mark "(confirms other reviewer)"
+            - If your finding would CONTRADICT a plausible other take → mark "(possible divergence — human arbitrate)"
 
             Rules:
             - Reply in the language of the PR title.
-            - Be concrete; reference filenames.
-            - Don't duplicate the GPT review's role — focus on YOUR lens.
+            - Be concrete; reference filenames and line ranges.
+            - Explain your reasoning ONE STEP AT A TIME; don't just declare verdicts.
             - Don't invent facts; say "cannot tell from diff alone" if unsure.
             - Never claim to have made changes.
-            - End with: `— 🤖 Gemini second-opinion via GitHub Models`
+            - End with: `— 🤖 DeepSeek V3 reasoning lens via GitHub Models`
           prompt: |
             # PR under review
 
@@ -154,29 +149,27 @@ jobs:
             **Description**:
             ${{ steps.diff.outputs.pr_body }}
 
-            **Scope breakdown by top-level directory**:
-            ${{ steps.diff.outputs.grouped }}
-
             **Diff**:
             ```diff
             ${{ steps.diff.outputs.diff }}
             ```
 
-            Now produce the structured cross-file review per the system prompt.
-          max-tokens: 1800
+            Now produce the reasoning-focused review per the system prompt.
+            Walk through the logic; don't just spot-check.
+          max-tokens: 2000
 
-      - name: Post / update Gemini review comment
+      - name: Post / update DeepSeek review comment
         uses: actions/github-script@v7
         env:
           AI_RESPONSE: ${{ steps.ai.outputs.response }}
         with:
           script: |
-            const MARKER = '<!-- ai-review-gemini-marker -->';
+            const MARKER = '<!-- ai-review-deepseek-marker -->';
             const body = [
               MARKER,
               process.env.AI_RESPONSE || '_(no response)_',
               '',
-              '<sub>🤖 Posted by `ai-review-gemini.yaml`. Pairs with the GPT-4o review above/below. Comparing the two is itself a signal — high agreement = higher confidence.</sub>',
+              '<sub>🤖 Posted by `ai-review-deepseek.yaml` (DeepSeek V3). The third voice — trio with GPT-4o and Llama 3.3. Use cross-model agreement as a confidence signal.</sub>',
             ].join('\n');
 
             const {data: existing} = await github.rest.issues.listComments({

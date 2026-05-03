@@ -38,7 +38,7 @@
 | 🧪 配 ESLint/Prettier/Husky/Vitest/Playwright 一整天就没了 | 脚手架出来的项目一次性带齐，还顺手给你 Docker + CI |
 | 🚀 npm 发包必须配长期 `NPM_TOKEN` | **Trusted Publishing**（GitHub OIDC）——零 secret，每次发布都带 provenance 签名 |
 | 🤖 手动处理 issue 累到怀疑人生 | 免费 **GitHub Models** 驱动的 issue 自动分类 / 问答 / 总结 |
-| 👀 PR review / autofix / 文档起草都要花大价钱买 SaaS | 内置 **双模型 PR 评审**（GPT-4o + Gemini）· `@bot-fix-lint` 自动修复 · `@ai-bot fix` 带门禁的代码修复 · `@ai-docs` 文档助手 —— 全部跑在免费的 GitHub Models |
+| 👀 PR review / autofix / 文档起草都要花大价钱买 SaaS | 内置 **三模型 PR 评审**（GPT-4o + Llama 3.3 + DeepSeek V3）· `@bot-fix-lint` 自动修复 · `@ai-bot fix` 带门禁的代码修复 · `@ai-docs` 文档助手 —— 全部跑在免费的 GitHub Models |
 | 🧩 在 monorepo 里新建一个子包全靠复制粘贴 | `lhx-cli add package <name>` 自动识别 monorepo 根、生成 tsup + tsconfig + README 骨架，配套 `create-package` skill，AI agent 也能一行指令搞定 |
 
 ---
@@ -73,7 +73,8 @@ lhx-kit/
 │   │   ├── ai-assistant.yaml        💬 评论 @ai-bot 触发问答
 │   │   ├── ai-summarize.yaml        🏷️ 打 ai-summary 标签触发 TL;DR
 │   │   ├── ai-review-gpt.yaml       👀 PR 评审 —— GPT-4o（正确性 + 安全）
-│   │   ├── ai-review-gemini.yaml    👀 PR 评审 —— Gemini 2.5（DX + 文档）
+│   │   ├── ai-review-llama.yaml     👀 PR 评审 —— Llama 3.3 70B（架构 + 文档）
+│   │   ├── ai-review-deepseek.yaml  👀 PR 评审 —— DeepSeek V3（推理链 + 边界条件）
 │   │   ├── ai-autofix.yaml          🔧 @bot-fix-lint → Biome 确定性修复（不走 LLM）
 │   │   ├── ai-code-fix.yaml         🛠️ @ai-bot fix → 带门禁的 AI 补丁 → 自检 → Draft PR
 │   │   └── ai-docs-assistant.yaml   📝 @ai-docs draft/polish —— README/文档助手
@@ -141,7 +142,8 @@ pnpm exec lhx-cli add package my-utility   # 自动识别 monorepo 根、
 
 **PR 生命周期**
 - **ai-review-gpt** —— GPT-4o 专注正确性、安全、破坏性变更
-- **ai-review-gemini** —— Gemini 2.5 专注 DX、命名、文档覆盖——两种视角，reviewer 自取所需
+- **ai-review-llama** —— Meta Llama 3.3 70B 专注架构、文档、命名一致性
+- **ai-review-deepseek** —— DeepSeek V3 专注边界条件、推理链、测试覆盖 —— 三个独立的视角分别来自 OpenAI / Meta / DeepSeek 三条不同的训练 pipeline
 - **ai-autofix** —— 在 PR 评论 `@bot-fix-lint` → 直接跑 `biome check --write`，**整个链路不经过 LLM**（确定性强，安全可预期）
 - **ai-code-fix** —— 评论 `@ai-bot fix <提示>` → 4 层门禁（actor 权限 + 文件白名单 + diff 大小上限 + 人工 label）→ AI 补丁 → 自检（typecheck + lint + test）→ 失败自动迭代一次 → 开 **Draft PR**（绝不直接推 main）
 

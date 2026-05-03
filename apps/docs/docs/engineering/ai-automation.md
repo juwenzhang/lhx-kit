@@ -11,7 +11,7 @@
 
 ## 🧭 8 条 AI workflow 全景
 
-lhx-kit 现在一共有 **8 条 AI workflow**，本篇讲前 3 条基础的，其余 5 条详见[对应篇目](./ai-review-strategy)：
+lhx-kit 现在一共有 **9 条 AI workflow**，本篇讲前 3 条基础的，其余 6 条详见[对应篇目](./ai-review-strategy)：
 
 | # | Workflow | 触发 | 本篇覆盖 |
 |---|---|---|---|
@@ -19,12 +19,13 @@ lhx-kit 现在一共有 **8 条 AI workflow**，本篇讲前 3 条基础的，�
 | 2 | `ai-assistant.yaml` | `@ai-bot <问题>` | ✅ 本篇 |
 | 3 | `ai-summarize.yaml` | 打 `ai-summary` label | ✅ 本篇 |
 | 4 | `ai-review-gpt.yaml` | PR 事件 | → [ai-review-strategy](./ai-review-strategy) |
-| 5 | `ai-review-gemini.yaml` | PR 事件 | → [ai-review-strategy](./ai-review-strategy) |
-| 6 | `ai-autofix.yaml` | `@bot-fix-lint` (PR) | → [ai-review-strategy](./ai-review-strategy) |
-| 7 | `ai-code-fix.yaml` | `@ai-bot fix <...>` (issue) | → [ai-review-strategy](./ai-review-strategy) |
-| 8 | `ai-docs-assistant.yaml` | `@ai-docs draft/polish ...` | → [ai-review-strategy](./ai-review-strategy) |
+| 5 | `ai-review-llama.yaml` | PR 事件 | → [ai-review-strategy](./ai-review-strategy) |
+| 6 | `ai-review-deepseek.yaml` | PR 事件 | → [ai-review-strategy](./ai-review-strategy) |
+| 7 | `ai-autofix.yaml` | `@bot-fix-lint` (PR) | → [ai-review-strategy](./ai-review-strategy) |
+| 8 | `ai-code-fix.yaml` | `@ai-bot fix <...>` (issue) | → [ai-review-strategy](./ai-review-strategy) |
+| 9 | `ai-docs-assistant.yaml` | `@ai-docs draft/polish ...` | → [ai-review-strategy](./ai-review-strategy) |
 
-**所有 8 条都跑在 [GitHub Models](https://docs.github.com/en/github-models) 上，公开仓库免费、零 API key。**
+**所有 9 条都跑在 [GitHub Models](https://docs.github.com/en/github-models) 上，公开仓库免费、零 API key。**
 
 ---
 
