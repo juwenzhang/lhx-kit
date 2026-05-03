@@ -18,11 +18,6 @@ export default defineConfig({
   lang: 'zh',
   title: 'lhx-kit',
   description: 'MPA 脚手架 · 运行时 · Vite 插件 · 配置驱动渲染 · 离线打包',
-  icon: '/favicon.ico',
-  logo: {
-    light: '/favicon.ico',
-    dark: '/favicon.ico'
-  },
   logoText: 'lhx-kit',
   themeConfig: {
     enableContentAnimation: true,
