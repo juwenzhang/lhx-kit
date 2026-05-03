@@ -1,0 +1,214 @@
+name: 🤖 AI PR Review (GPT-4o primary)
+
+# Primary AI PR reviewer. Runs on every PR open / update, reads the
+# diff + changed-file list, and posts ONE structured review comment
+# (replaces the previous one via HTML marker).
+#
+# Sibling workflow: ai-review-gemini.yaml does the same job with
+# Google Gemini, giving a second perspective. The two models are
+# intentionally NOT merged into a single "consensus" comment — keeping
+# them as separate comments lets maintainers see where they agree /
+# disagree, which itself is a signal of confidence.
+#
+# Zero cost: GitHub Models on public repos is free, no API key.
+# Public-repo quota is generous; private-repo callers should monitor.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write   # post / update the review comment
+  models: read           # GitHub Models inference
+
+concurrency:
+  group: ai-review-gpt-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: GPT-4o review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Gating: skip drafts (they're WIP), skip bot-authored PRs
+    # (prevents infinite bot<->bot loops), and skip forks from drive-by
+    # accounts to keep the attack surface small.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.type != 'Bot' &&
+      !contains(fromJSON('["NONE", "FIRST_TIME_CONTRIBUTOR"]'),
+                github.event.pull_request.author_association)
+
+    steps:
+      - name: Checkout PR (merge commit)
+        uses: actions/checkout@v4
+        with:
+          # Use the PR merge ref so the reviewer sees exactly what
+          # would land on master. fetch-depth:2 gives us HEAD~1 for diff.
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
+          fetch-depth: 2
+
+      - name: Collect PR diff (<= 150 KB)
+        id: diff
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Files list — title, status, additions, deletions — cheap to fetch.
+            const {data: files} = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            // Strip lockfile / generated files from the diff payload; the
+            // model has nothing useful to say about them and they dominate
+            // token budget. Real source changes that triggered a lockfile
+            // update are still evident from the changed-files list.
+            const IGNORE = [
+              /^pnpm-lock\.yaml$/,
+              /^package-lock\.json$/,
+              /^yarn\.lock$/,
+              /\/dist\//,
+              /\/doc_build\//,
+              /\.min\.js$/,
+              /\.map$/,
+            ];
+            const filtered = files.filter(f =>
+              !IGNORE.some(rx => rx.test(f.filename))
+            );
+
+            // Combined diff via GitHub's unified-diff media type.
+            // If the PR is huge we cap at 150 KB — models degrade badly
+            // beyond ~40k tokens and cost rises non-linearly anyway.
+            const MAX_DIFF_BYTES = 150 * 1024;
+            let diff = '';
+            for (const f of filtered) {
+              if (!f.patch) continue;
+              const chunk = `\n\n--- ${f.filename} (${f.status}, +${f.additions}/-${f.deletions}) ---\n${f.patch}`;
+              if (diff.length + chunk.length > MAX_DIFF_BYTES) {
+                diff += `\n\n[… diff truncated at ${MAX_DIFF_BYTES} bytes. ${filtered.length - filtered.indexOf(f)} files omitted. …]`;
+                break;
+              }
+              diff += chunk;
+            }
+
+            core.setOutput('diff', diff);
+            core.setOutput('file_count', filtered.length);
+            core.setOutput('addition_count', filtered.reduce((s, f) => s + f.additions, 0));
+            core.setOutput('deletion_count', filtered.reduce((s, f) => s + f.deletions, 0));
+            core.setOutput('pr_title', pr.title);
+            core.setOutput('pr_body', pr.body || '(empty)');
+            core.setOutput('author', pr.user.login);
+
+      - name: Call GPT-4o for review
+        id: ai
+        uses: actions/ai-inference@v1
+        with:
+          # gpt-4o (not mini) — this is a review task, model quality
+          # matters more than latency. Costs nothing on public repos.
+          model: openai/gpt-4o
+          system-prompt: |
+            You are a senior code reviewer for the lhx-kit monorepo
+            (TypeScript MPA toolchain: @lhx-kit/cli, runtime, vite-plugin,
+            renderer, offline, config, skills, tsconfig).
+
+            Your single output is one Markdown review comment. Structure it
+            EXACTLY like this (keep the section headings, drop a section
+            if it has nothing to say, write "—" as placeholder):
+
+            ## 🎯 Verdict
+
+            One line: 👍 LGTM / 🟡 approve with nits / 🔴 request changes / 🤔 needs discussion.
+            Followed by one sentence justifying the verdict.
+
+            ## ✅ What looks good
+
+            - bullet points, max 3
+
+            ## ⚠️ Concerns
+
+            - bullet points, max 5, concrete, file-anchored
+            - format: `path/to/file.ts:12` — what + why
+            - if a bug: describe the reproduction
+            - if a smell: suggest the refactor
+
+            ## 🧪 Test coverage
+
+            Did the PR change runtime behavior without adding/updating tests? Mention specifically.
+
+            ## 📚 Docs
+
+            Does the change touch public API (exported types / CLI flags / config keys)?
+            If yes, flag whether apps/docs/ was updated accordingly.
+
+            ## 💡 Optional nits
+
+            Subjective style preferences; clearly optional, under "nits".
+
+            Rules:
+            - Reply in the language of the PR title (Chinese title → Chinese review).
+            - Be specific, reference line numbers from the diff.
+            - Don't invent code that isn't in the diff.
+            - If the PR is trivial (typo, bump, rename), keep the review short.
+            - Never claim to have made code changes. You only review.
+            - End with: `— 🤖 GPT-4o review via GitHub Models`
+          prompt: |
+            # PR under review
+
+            **Title**: ${{ steps.diff.outputs.pr_title }}
+            **Author**: @${{ steps.diff.outputs.author }}
+            **Scope**: ${{ steps.diff.outputs.file_count }} files, +${{ steps.diff.outputs.addition_count }} / -${{ steps.diff.outputs.deletion_count }}
+
+            **Description**:
+            ${{ steps.diff.outputs.pr_body }}
+
+            **Diff**:
+            ```diff
+            ${{ steps.diff.outputs.diff }}
+            ```
+
+            Now produce the structured review per the system prompt.
+          max-tokens: 2000
+
+      - name: Post / update review comment
+        uses: actions/github-script@v7
+        env:
+          AI_RESPONSE: ${{ steps.ai.outputs.response }}
+        with:
+          script: |
+            const MARKER = '<!-- ai-review-gpt-marker -->';
+            const body = [
+              MARKER,
+              process.env.AI_RESPONSE || '_(no response)_',
+              '',
+              '<sub>🤖 Posted by `ai-review-gpt.yaml`. Re-runs on every push to this PR and replaces this comment — no spam. Counterpart Gemini review appears separately.</sub>',
+            ].join('\n');
+
+            const {data: existing} = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const prior = existing.find(c => (c.body || '').includes(MARKER));
+            if (prior) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: prior.id,
+                body,
+              });
+              core.info(`Updated existing GPT review comment #${prior.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+              core.info('Posted new GPT review comment');
+            }

@@ -1,0 +1,199 @@
+name: 🔧 Deterministic Autofix (Biome)
+
+# On-demand lint/format autofix for PRs. Comment `@bot-fix-lint`
+# on any PR to trigger a deterministic biome --write pass + typecheck
+# verification. Does NOT use any LLM — biome knows the rules, the
+# model doesn't add value here and adds risk.
+#
+# Why comment-triggered instead of auto-run on every push:
+#   - autofix commits from CI mix poorly with WIP force-pushes
+#   - author should be in control of when formatting lands in their
+#     history (especially if they rebase/squash later)
+#   - a single opt-in signal is clearer than silent background commits
+#
+# Sibling workflow: ai-code-fix.yaml handles LLM-driven fixes. This
+# one is strictly rule-based and always safe.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write        # required to push the autofix commit
+  issues: write          # to react to the triggering comment
+  pull-requests: write   # to reply in the PR
+
+concurrency:
+  # Never run two autofixes on the same PR simultaneously — they would
+  # race and one would lose its push.
+  group: ai-autofix-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  autofix:
+    name: Biome autofix on PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Gating (4 layers, each a hard requirement):
+    #   1. Must be a comment on a PR, not a plain issue
+    #   2. Must start with @bot-fix-lint
+    #   3. Must come from OWNER / MEMBER / COLLABORATOR — public
+    #      autofix would be an obvious abuse vector
+    #   4. Must be a human (prevent bot loops)
+    if: >-
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '@bot-fix-lint') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+               github.event.comment.author_association) &&
+      github.event.comment.user.type != 'Bot'
+
+    steps:
+      - name: React to the mention (🔧)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket',
+            });
+
+      - name: Resolve PR metadata
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {data: pr} = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.issue.number,
+            });
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('head_repo', pr.head.repo.full_name);
+            core.setOutput('is_fork', String(pr.head.repo.full_name !== pr.base.repo.full_name));
+
+      - name: Refuse fork PRs (security)
+        # We cannot push back to a PR from a forked repo unless the
+        # fork owner has enabled "Allow edits by maintainers"; even
+        # then, pushing autofix commits to a fork is brittle. Document
+        # the workaround (manual biome run locally) and bail early.
+        if: steps.pr.outputs.is_fork == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: [
+                '🙏 Autofix on fork PRs is not supported.',
+                '',
+                'Please run locally in your fork:',
+                '```bash',
+                'pnpm exec biome check --write .',
+                'git commit -am "chore: biome autofix"',
+                'git push',
+                '```',
+                '',
+                '<sub>🤖 `ai-autofix.yaml`</sub>',
+              ].join('\n'),
+            });
+            core.setFailed('Skipping: PR is from a fork.');
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 0      # full history for later push
+          # Use a PAT if provided; otherwise GITHUB_TOKEN. Needed so
+          # the push can trigger downstream CI runs (workflows triggered
+          # by GITHUB_TOKEN don't recurse-trigger other workflows).
+          token: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm + Node
+        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run biome --write
+        id: biome
+        run: |
+          pnpm exec biome check --write .
+          # biome sets non-zero exit if there are unfixable issues.
+          # We still want to continue to see what was autofixable.
+          echo "ran=true" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Verify typecheck still passes after autofix
+        # Defensive: if biome's autofix silently broke types (rare but
+        # possible with organize-imports shuffling imports of types),
+        # we do NOT commit the fix. Bail and leave the PR as-is.
+        id: typecheck
+        run: pnpm -r --if-present --parallel --filter='./packages/*' typecheck
+        continue-on-error: true
+
+      - name: Decide whether to commit
+        id: decide
+        run: |
+          if [ "${{ steps.typecheck.outcome }}" != "success" ]; then
+            echo "commit=false"     >> "$GITHUB_OUTPUT"
+            echo "reason=typecheck failed after autofix — rolling back" >> "$GITHUB_OUTPUT"
+            git checkout -- .
+            exit 0
+          fi
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "commit=false"     >> "$GITHUB_OUTPUT"
+            echo "reason=biome had nothing to fix" >> "$GITHUB_OUTPUT"
+          else
+            echo "commit=true"      >> "$GITHUB_OUTPUT"
+            echo "reason=applied"   >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit & push autofix
+        if: steps.decide.outputs.commit == 'true'
+        run: |
+          git config user.name  'lhx-kit-bot'
+          git config user.email 'bot@lhx-kit.dev'
+          git add -A
+          git commit -m "chore: biome autofix (triggered by @${{ github.event.comment.user.login }})" \
+                     -m "Ran via @bot-fix-lint comment on PR #${{ github.event.issue.number }}."
+          git push origin HEAD:"${{ steps.pr.outputs.head_ref }}"
+
+      - name: Comment outcome
+        uses: actions/github-script@v7
+        env:
+          COMMIT: ${{ steps.decide.outputs.commit }}
+          REASON: ${{ steps.decide.outputs.reason }}
+        with:
+          script: |
+            const committed = process.env.COMMIT === 'true';
+            const reason = process.env.REASON;
+            const icon = committed ? '✅' : 'ℹ️';
+            const head = committed
+              ? 'Autofix applied and pushed.'
+              : 'Nothing committed.';
+            const body = [
+              `@${context.payload.comment.user.login}`,
+              '',
+              `${icon} **${head}**`,
+              '',
+              `Reason: ${reason}`,
+              '',
+              committed
+                ? 'The fresh commit will trigger CI. Please review the diff before merging.'
+                : 'Feel free to re-trigger with `@bot-fix-lint` after making changes.',
+              '',
+              '<sub>🔧 `ai-autofix.yaml` — deterministic, no LLM.</sub>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body,
+            });

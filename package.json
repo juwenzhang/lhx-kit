@@ -50,6 +50,7 @@
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
     "commitlint": "commitlint --edit",
     "icons:gen": "node scripts/gen-icons.mjs --out apps/docs/docs/public --user juwenzhang",
+    "sync:readmes": "node scripts/sync-readmes.mjs",
     "changeset": "changeset",
     "changeset:add": "changeset add",
     "changeset:status": "changeset status --verbose",

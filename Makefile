@@ -153,6 +153,10 @@ release-dry:  ## 模拟发布（不真正 publish）
 icons-gen:  ## 重新生成文档站 favicon
 	pnpm run icons:gen
 
+.PHONY: sync-readmes
+sync-readmes:  ## 刷新所有包 README 的 managed footer（安装 / badges / 链接）
+	pnpm run sync:readmes
+
 .PHONY: info
 info:  ## 打印环境信息（Node / pnpm / git / workspace 树）
 	@echo "$(BOLD)Environment$(RESET)"

@@ -1,0 +1,402 @@
+name: 📘 AI Docs Assistant (draft / polish)
+
+# Drives the apps/docs/ Rspress site via AI. Two commands:
+#
+#   @ai-docs draft <topic>
+#     Creates a new Markdown article with a sensible skeleton
+#     (frontmatter, TOC-friendly headings, placeholder sections).
+#     Author decides target directory via the first path segment of
+#     <topic>, or model picks /guide/ by default.
+#
+#   @ai-docs polish <relative-file-path>
+#     Rewrites an existing doc for clarity / completeness without
+#     changing the intent. Preserves code blocks verbatim.
+#
+# Both flows end in a DRAFT PR. Docs quality is subjective — keep
+# humans in the final loop.
+#
+# Runs on Issue comments ONLY (not PRs) to avoid double-triggering
+# alongside the PR-scoped fixers.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  models: read
+
+concurrency:
+  group: ai-docs-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    name: Draft or polish docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Same 4-layer gate as ai-code-fix, plus a command prefix check.
+    if: >-
+      github.event.issue.pull_request == null &&
+      (startsWith(github.event.comment.body, '@ai-docs draft ') ||
+       startsWith(github.event.comment.body, '@ai-docs polish ')) &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+               github.event.comment.author_association) &&
+      github.event.comment.user.type != 'Bot'
+
+    steps:
+      - name: React (📚)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes',
+            });
+
+      - name: Parse command
+        id: cmd
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.comment.body;
+            let mode, arg;
+            if (body.startsWith('@ai-docs draft ')) {
+              mode = 'draft';
+              arg  = body.slice('@ai-docs draft '.length).trim();
+            } else if (body.startsWith('@ai-docs polish ')) {
+              mode = 'polish';
+              arg  = body.slice('@ai-docs polish '.length).trim();
+            } else {
+              core.setFailed('Command regex mismatch (should not happen).');
+              return;
+            }
+            core.setOutput('mode', mode);
+            core.setOutput('arg',  arg);
+            core.setOutput('asker', context.payload.comment.user.login);
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm + Node
+        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Gather docs context
+        id: ctx
+        run: |
+          # Send the rspress nav/sidebar config + current docs tree so
+          # the model knows where things live and what the house style is.
+          RSPRESS_CFG=$(cat apps/docs/rspress.config.ts 2>/dev/null | head -c 6000 || echo '(config unreadable)')
+          DOCS_TREE=$(find apps/docs/docs -type f -name '*.md' | head -60 | sort || true)
+          {
+            echo 'rspress_cfg<<CFGEOF'
+            echo "$RSPRESS_CFG"
+            echo CFGEOF
+            echo 'docs_tree<<TREEEOF'
+            echo "$DOCS_TREE"
+            echo TREEEOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Load target file (polish mode)
+        id: target
+        if: steps.cmd.outputs.mode == 'polish'
+        run: |
+          ARG='${{ steps.cmd.outputs.arg }}'
+          # Safety: refuse paths outside apps/docs/.
+          case "$ARG" in
+            apps/docs/*) ;;
+            *)
+              echo "::error::Polish target must be under apps/docs/ (got: $ARG)"
+              exit 1
+              ;;
+          esac
+          if [ ! -f "$ARG" ]; then
+            echo "::error::File not found: $ARG"
+            exit 1
+          fi
+          {
+            echo 'content<<CTNEOF'
+            cat "$ARG"
+            echo CTNEOF
+          } >> "$GITHUB_OUTPUT"
+          echo "path=$ARG" >> "$GITHUB_OUTPUT"
+
+      - name: Create working branch
+        id: branch
+        run: |
+          BRANCH="ai-docs/${{ github.event.issue.number }}-$(date +%Y%m%d-%H%M%S)"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+          git checkout -b "$BRANCH"
+          git config user.name  'lhx-kit-bot'
+          git config user.email 'bot@lhx-kit.dev'
+
+      # ---------- DRAFT MODE ----------
+      - name: Call AI (draft mode)
+        id: ai_draft
+        if: steps.cmd.outputs.mode == 'draft'
+        uses: actions/ai-inference@v1
+        with:
+          model: openai/gpt-4o
+          system-prompt: |
+            You are a senior technical writer for the lhx-kit Rspress
+            documentation site. You produce complete, publishable-quality
+            Markdown articles.
+
+            Output MUST be valid JSON matching this schema (no fences, no
+            prose around the JSON):
+
+            {
+              "file_path": "apps/docs/docs/<section>/<slug>.md",
+              "title": "Human title",
+              "content": "full markdown with YAML frontmatter",
+              "sidebar_entry": {
+                "section": "one of: /guide/, /cli/, /runtime/, /renderer/, /offline/, /engineering/, /templates/, /reference/",
+                "text": "label to show in sidebar",
+                "hint": "which group to add it under — free-form text"
+              }
+            }
+
+            Article conventions (look at existing docs for examples):
+            - Start with a `>` blockquote: one-paragraph thesis.
+            - Use emoji in H2 headings (🎯 / 🧩 / ⚠️ / 💡 / 📚).
+            - Anchor every claim to project code paths (backtick
+              `packages/<name>/src/...`) or doc links.
+            - End with a "📚 相关 / Related" section linking peers.
+            - Language: match the topic word's language (Chinese topic
+              → Chinese article).
+            - Length: aim for 200-500 lines; shorter if the topic is small.
+            - Do NOT modify any other file.
+          prompt: |
+            # Task
+            Draft a new documentation article about:
+
+            **${{ steps.cmd.outputs.arg }}**
+
+            # Site configuration (truncated)
+            ```
+            ${{ steps.ctx.outputs.rspress_cfg }}
+            ```
+
+            # Existing doc files (for section conventions)
+            ```
+            ${{ steps.ctx.outputs.docs_tree }}
+            ```
+
+            Produce the JSON described in system prompt.
+          max-tokens: 8000
+
+      # ---------- POLISH MODE ----------
+      - name: Call AI (polish mode)
+        id: ai_polish
+        if: steps.cmd.outputs.mode == 'polish'
+        uses: actions/ai-inference@v1
+        with:
+          model: openai/gpt-4o
+          system-prompt: |
+            You are a technical editor polishing an existing Rspress doc.
+
+            Output MUST be the FULL revised markdown content, starting
+            directly with the content (no JSON wrapper, no fences around
+            the whole thing).
+
+            Rules for polishing:
+            - PRESERVE intent 100%. Do not add new claims or change
+              technical positions.
+            - PRESERVE all code blocks verbatim.
+            - PRESERVE frontmatter as-is.
+            - You MAY: tighten wording, split too-long paragraphs, add
+              missing transitions, fix typos, standardize emoji in H2s,
+              normalize language formality.
+            - If a section is clearly incomplete (like "TODO"), leave it
+              as "TODO" — don't invent content.
+            - Keep the original overall length within ±15%.
+          prompt: |
+            # Target file
+            **Path**: ${{ steps.target.outputs.path }}
+
+            # Original content
+            ${{ steps.target.outputs.content }}
+
+            Output the full revised file content directly (no wrapper,
+            no fences around the whole file — inline fenced code blocks
+            stay as-is).
+          max-tokens: 8000
+
+      - name: Apply (draft)
+        if: steps.cmd.outputs.mode == 'draft'
+        id: apply_draft
+        uses: actions/github-script@v7
+        env:
+          AI_OUTPUT: ${{ steps.ai_draft.outputs.response }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const path = require('node:path');
+            let raw = (process.env.AI_OUTPUT || '').trim();
+            raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+            let parsed;
+            try {
+              parsed = JSON.parse(raw);
+            } catch (err) {
+              core.setFailed(`Draft model returned non-JSON: ${err.message}`);
+              return;
+            }
+            if (!parsed.file_path || !parsed.content) {
+              core.setFailed('Draft response missing required fields');
+              return;
+            }
+            if (!parsed.file_path.startsWith('apps/docs/docs/')) {
+              core.setFailed(`Draft file_path must be under apps/docs/docs/ (got: ${parsed.file_path})`);
+              return;
+            }
+            const abs = path.join(process.cwd(), parsed.file_path);
+            fs.mkdirSync(path.dirname(abs), {recursive: true});
+            fs.writeFileSync(abs, parsed.content, 'utf8');
+            core.setOutput('file_path', parsed.file_path);
+            core.setOutput('title', parsed.title || parsed.file_path);
+            core.setOutput('sidebar_hint', parsed.sidebar_entry?.hint || '');
+            core.setOutput('sidebar_section', parsed.sidebar_entry?.section || '');
+            core.setOutput('sidebar_text', parsed.sidebar_entry?.text || '');
+
+      - name: Apply (polish)
+        if: steps.cmd.outputs.mode == 'polish'
+        id: apply_polish
+        run: |
+          cat > "${{ steps.target.outputs.path }}" <<'POLISHEOF'
+          ${{ steps.ai_polish.outputs.response }}
+          POLISHEOF
+
+      - name: Docs self-check (rspress build smoke test)
+        id: smoke
+        run: |
+          set +e
+          pnpm --filter 'lhx-kit-docs' build > /tmp/rspress.log 2>&1
+          RSPRESS_EXIT=$?
+          set -e
+          if [ "$RSPRESS_EXIT" -ne 0 ]; then
+            tail -c 4000 /tmp/rspress.log
+            echo "pass=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "pass=true"  >> "$GITHUB_OUTPUT"
+          fi
+        continue-on-error: true
+
+      - name: Commit + push + draft PR
+        if: steps.smoke.outputs.pass == 'true'
+        uses: actions/github-script@v7
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+          MODE:   ${{ steps.cmd.outputs.mode }}
+          ARG:    ${{ steps.cmd.outputs.arg }}
+          ASKER:  ${{ steps.cmd.outputs.asker }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          DRAFT_FILE:   ${{ steps.apply_draft.outputs.file_path }}
+          DRAFT_TITLE:  ${{ steps.apply_draft.outputs.title }}
+          SIDEBAR_HINT: ${{ steps.apply_draft.outputs.sidebar_hint }}
+          SIDEBAR_SECTION: ${{ steps.apply_draft.outputs.sidebar_section }}
+          SIDEBAR_TEXT: ${{ steps.apply_draft.outputs.sidebar_text }}
+          POLISH_FILE:  ${{ steps.target.outputs.path }}
+        with:
+          script: |
+            const {execSync} = require('node:child_process');
+            const br = process.env.BRANCH;
+            const mode = process.env.MODE;
+
+            const commitMsg = mode === 'draft'
+              ? `docs: draft new article on "${process.env.ARG}"`
+              : `docs: polish ${process.env.POLISH_FILE}`;
+
+            execSync('git add -A', {stdio: 'inherit'});
+            execSync(`git commit -m "${commitMsg}" -m "Triggered by @${process.env.ASKER} on #${process.env.ISSUE_NUMBER}"`, {stdio: 'inherit'});
+            execSync(`git push -u origin ${br}`, {stdio: 'inherit'});
+
+            const prTitle = commitMsg;
+            const prBody = mode === 'draft'
+              ? [
+                  '> 📘 **AI-drafted article.** Needs human review before merging.',
+                  '',
+                  `Closes #${process.env.ISSUE_NUMBER}`,
+                  '',
+                  '## 📄 New file',
+                  `- \`${process.env.DRAFT_FILE}\` — _${process.env.DRAFT_TITLE}_`,
+                  '',
+                  '## 🧭 Sidebar wiring (manual)',
+                  '',
+                  `Suggested section: **${process.env.SIDEBAR_SECTION || '(unspecified)'}**`,
+                  `Suggested label: **${process.env.SIDEBAR_TEXT || '(unspecified)'}**`,
+                  `Hint: ${process.env.SIDEBAR_HINT || '(none)'}`,
+                  '',
+                  'Please edit `apps/docs/rspress.config.ts` to register this article in the sidebar before merging.',
+                  '',
+                  '## 🧪 Smoke-checked',
+                  '- rspress build: ✅ passed',
+                  '',
+                  '---',
+                  `<sub>🤖 \`ai-docs-assistant.yaml\`. Drafted by GPT-4o, triggered by @${process.env.ASKER}.</sub>`,
+                ].join('\n')
+              : [
+                  '> 📘 **AI-polished article.** Diff review recommended.',
+                  '',
+                  `Closes #${process.env.ISSUE_NUMBER}`,
+                  '',
+                  '## 🖋️ Polished',
+                  `- \`${process.env.POLISH_FILE}\``,
+                  '',
+                  '## 🧪 Smoke-checked',
+                  '- rspress build: ✅ passed',
+                  '',
+                  '---',
+                  `<sub>🤖 \`ai-docs-assistant.yaml\` — polish mode. Check the diff for unintended semantic drift.</sub>`,
+                ].join('\n');
+
+            const {data: pr} = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: prTitle,
+              body: prBody,
+              head: br,
+              base: context.payload.repository.default_branch,
+              draft: true,
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.ISSUE_NUMBER,
+              body: `@${process.env.ASKER} 📘 Draft docs PR: #${pr.number} (${pr.html_url})`,
+            });
+
+      - name: Report failure
+        if: steps.smoke.outputs.pass != 'true'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ASKER: ${{ steps.cmd.outputs.asker }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.ISSUE_NUMBER,
+              body: [
+                `@${process.env.ASKER}`,
+                '',
+                '⚠️ AI-generated docs content failed the rspress build smoke test. Nothing was pushed.',
+                '',
+                'Try again with a more specific topic/path, or run `pnpm docs:build` locally to diagnose.',
+                '',
+                '<sub>🤖 `ai-docs-assistant.yaml`</sub>',
+              ].join('\n'),
+            });

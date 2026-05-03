@@ -151,3 +151,37 @@ Importing `@lhx-kit/runtime/mobile` on the server is a silent no-op, not a crash
 ## License
 
 [MIT](./LICENSE) © luhanxin
+
+<!-- lhx-readme-footer:begin -->
+
+---
+
+## 📦 Install
+
+```bash
+npm install @lhx-kit/runtime
+# or
+pnpm add @lhx-kit/runtime
+```
+
+![npm](https://img.shields.io/npm/v/%40lhx-kit%2Fruntime.svg) 
+![provenance](https://img.shields.io/badge/provenance-verified-brightgreen?logo=npm)
+
+## 📖 Docs & further reading
+
+- 🏠 Project home: <https://juwenzhang.github.io/lhx-kit/>
+- 📘 Package docs: [/cli/reference](https://juwenzhang.github.io/lhx-kit/cli/reference), [/guide/architecture](https://juwenzhang.github.io/lhx-kit/guide/architecture)
+- 🛠️ Engineering column: [/engineering/overview](https://juwenzhang.github.io/lhx-kit/engineering/overview)
+- 💬 Issues & discussions: <https://github.com/juwenzhang/lhx-kit/issues>
+
+## 🤝 Contributing
+
+PRs welcome. Please read [CONTRIBUTING.md](https://github.com/juwenzhang/lhx-kit/blob/master/CONTRIBUTING.md) and run `pnpm changeset` for any user-visible change. First-time contributors: look for labels `good first issue` and `help wanted`.
+
+## 📄 License
+
+[MIT](https://github.com/juwenzhang/lhx-kit/blob/master/LICENSE) © luhanxin
+
+<sub>Part of the [`@lhx-kit`](https://github.com/juwenzhang/lhx-kit) monorepo. Every release is OIDC-signed via npm Trusted Publishing — verify the provenance attestation on the npm package page.</sub>
+
+<!-- lhx-readme-footer:end -->

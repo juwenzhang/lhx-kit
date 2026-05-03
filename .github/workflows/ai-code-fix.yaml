@@ -1,0 +1,500 @@
+name: 🤖 AI Code Fix (opt-in, draft PR)
+
+# LLM-driven code fix, triggered by `@ai-bot fix <instruction>` comments
+# on Issues (NOT on PRs — those use @bot-fix-lint for deterministic
+# autofix, or the regular review workflows).
+#
+# Flow:
+#   1. Gate on 4 hard requirements (see `if:`)
+#   2. Ask GPT-4o to produce a structured patch plan
+#   3. Apply the patch on a fresh branch
+#   4. Run biome + typecheck self-check
+#      - pass: open a DRAFT PR linking the issue
+#      - fail: one retry with the error context fed back to the model
+#      - retry also fails: degrade gracefully — post the diff as an
+#        issue comment for a human to hand-apply, do NOT push anything
+#
+# Design choices worth calling out:
+# - Draft PR, never ready-for-review. The maintainer must explicitly
+#   mark it ready. This is the single most important safety valve.
+# - PR body starts with a LARGE disclaimer block. AI code is AI code.
+# - Branch name includes 'ai-fix/' prefix for easy identification +
+#   eventual cleanup via `gh pr list --head ai-fix/`.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  models: read
+
+concurrency:
+  group: ai-code-fix-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    name: Generate patch and open draft PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # 4-layer gate:
+    #   1. Must be a comment on an Issue, NOT a PR
+    #      (PR fixes are @bot-fix-lint's job)
+    #   2. Must start with '@ai-bot fix ' (trailing space matters)
+    #   3. Must come from maintainer (OWNER/MEMBER/COLLABORATOR) — the
+    #      single most important line in this file
+    #   4. Must be human
+    if: >-
+      github.event.issue.pull_request == null &&
+      startsWith(github.event.comment.body, '@ai-bot fix ') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+               github.event.comment.author_association) &&
+      github.event.comment.user.type != 'Bot'
+
+    steps:
+      - name: React (🔧)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket',
+            });
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm + Node
+        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Gather issue context + source tree snapshot
+        id: context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const {data: issue} = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+            });
+            const {data: comments} = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              per_page: 50,
+            });
+            const triggerId = context.payload.comment.id;
+            const history = comments
+              .filter(c => c.id !== triggerId && c.user.type !== 'Bot')
+              .slice(-5)
+              .map(c => `[@${c.user.login}] ${c.body}`)
+              .join('\n\n');
+
+            const instruction = context.payload.comment.body
+              .replace(/^@ai-bot fix\s+/i, '')
+              .trim();
+
+            // Ship a compact repo tree so the model has a map of the
+            // codebase without being fed every file. Depth 3 is
+            // enough to see all packages/* and their src/ folders.
+            const {execSync} = require('node:child_process');
+            const tree = execSync(
+              'find packages apps -maxdepth 3 -type f ' +
+              '\\( -name "*.ts" -o -name "*.tsx" -o -name "*.md" -o -name "package.json" \\) ' +
+              '| head -200',
+              {encoding: 'utf8'}
+            ).trim();
+
+            core.setOutput('instruction', instruction);
+            core.setOutput('issue_title', issue.title);
+            core.setOutput('issue_body', issue.body || '');
+            core.setOutput('history', history);
+            core.setOutput('asker', context.payload.comment.user.login);
+            core.setOutput('tree', tree);
+
+      - name: Create working branch
+        id: branch
+        run: |
+          BRANCH="ai-fix/${{ github.event.issue.number }}-$(date +%Y%m%d-%H%M%S)"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+          git checkout -b "$BRANCH"
+          git config user.name  'lhx-kit-bot'
+          git config user.email 'bot@lhx-kit.dev'
+
+      - name: Attempt 1 — ask GPT-4o for a patch plan
+        id: ai1
+        uses: actions/ai-inference@v1
+        with:
+          model: openai/gpt-4o
+          system-prompt: |
+            You are a code-fix assistant for the lhx-kit monorepo. Your
+            output MUST be a single valid JSON object (no prose, no
+            fences) with this exact shape:
+
+            {
+              "plan": "one paragraph describing what you're doing and why",
+              "files": [
+                {"path": "relative/path", "action": "create"|"update", "content": "FULL file content"}
+              ],
+              "pr_title": "feat(scope): short title",
+              "pr_body": "markdown PR description"
+            }
+
+            Rules:
+            - Produce complete file contents, not diffs.
+            - Touch only files genuinely needed for the instruction.
+            - Keep `files` under 10 entries.
+            - Match the codebase style (see the existing files you're
+              editing for tab / indent / quote / semicolon conventions).
+            - NEVER modify: pnpm-lock.yaml, .changeset/*, dist/*,
+              doc_build/*, node_modules/*.
+            - If the instruction is ambiguous, pick the narrowest plausible
+              interpretation and note it in `plan`.
+            - If the instruction would touch > 10 files or > 500 lines,
+              DO NOT do it blindly. Return `files: []` and explain in
+              `plan` why human guidance is needed.
+            - Respect the `pr_title` Conventional Commits format:
+              `<type>(<scope>): <subject>`. Prefer type=fix or feat,
+              scope=one of: cli, config, runtime, renderer, offline,
+              vite-plugin, skills, tsconfig, docs, engineering, ai.
+          prompt: |
+            # Issue
+            Title: ${{ steps.context.outputs.issue_title }}
+            Body:
+            ${{ steps.context.outputs.issue_body }}
+
+            # Recent discussion
+            ${{ steps.context.outputs.history }}
+
+            # Instruction from @${{ steps.context.outputs.asker }}
+            ${{ steps.context.outputs.instruction }}
+
+            # Repository map (partial)
+            ```
+            ${{ steps.context.outputs.tree }}
+            ```
+
+            Return ONLY the JSON object specified in system prompt.
+          max-tokens: 4000
+
+      - name: Apply patch (attempt 1)
+        id: apply1
+        uses: actions/github-script@v7
+        env:
+          AI_OUTPUT: ${{ steps.ai1.outputs.response }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const path = require('node:path');
+            let raw = (process.env.AI_OUTPUT || '').trim();
+            // Defensive: strip ```json fences if the model wrapped.
+            raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+            let parsed;
+            try {
+              parsed = JSON.parse(raw);
+            } catch (err) {
+              core.setFailed(`Model returned non-JSON output: ${err.message}`);
+              core.setOutput('success', 'false');
+              core.setOutput('raw_for_fallback', raw);
+              return;
+            }
+
+            const files = Array.isArray(parsed.files) ? parsed.files : [];
+            if (files.length === 0) {
+              // Model bailed out per the >10-file guard.
+              core.setOutput('success', 'false');
+              core.setOutput('bail_reason', parsed.plan || 'model declined');
+              return;
+            }
+
+            const BLOCKED = [
+              /^pnpm-lock\.yaml$/,
+              /^\.changeset\//,
+              /\/dist\//,
+              /\/doc_build\//,
+              /^node_modules\//,
+            ];
+            for (const f of files) {
+              if (BLOCKED.some(rx => rx.test(f.path))) {
+                core.setFailed(`Refusing to modify blocked path: ${f.path}`);
+                core.setOutput('success', 'false');
+                return;
+              }
+              const abs = path.join(process.cwd(), f.path);
+              fs.mkdirSync(path.dirname(abs), {recursive: true});
+              fs.writeFileSync(abs, f.content, 'utf8');
+              core.info(`${f.action}: ${f.path}`);
+            }
+
+            core.setOutput('plan', parsed.plan || '');
+            core.setOutput('pr_title', parsed.pr_title || 'chore: ai-generated fix');
+            core.setOutput('pr_body', parsed.pr_body || '');
+            core.setOutput('file_count', String(files.length));
+            core.setOutput('success', 'true');
+
+      - name: Self-check round 1 (biome + typecheck)
+        id: check1
+        if: steps.apply1.outputs.success == 'true'
+        run: |
+          set +e
+          pnpm exec biome check --write . 2>&1 | tee /tmp/biome1.log
+          BIOME_EXIT=$?
+          pnpm -r --if-present --parallel --filter='./packages/*' typecheck 2>&1 | tee /tmp/tsc1.log
+          TSC_EXIT=$?
+          set -e
+          if [ "$BIOME_EXIT" -eq 0 ] && [ "$TSC_EXIT" -eq 0 ]; then
+            echo "pass=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pass=false" >> "$GITHUB_OUTPUT"
+            tail -c 4000 /tmp/biome1.log > /tmp/biome1-tail.log || true
+            tail -c 4000 /tmp/tsc1.log   > /tmp/tsc1-tail.log   || true
+            {
+              echo 'errors<<EOFERR'
+              echo '=== biome ==='
+              cat /tmp/biome1-tail.log 2>/dev/null || echo '(no biome log)'
+              echo '=== typecheck ==='
+              cat /tmp/tsc1-tail.log 2>/dev/null   || echo '(no tsc log)'
+              echo EOFERR
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Attempt 2 — retry with error context
+        id: ai2
+        if: steps.apply1.outputs.success == 'true' && steps.check1.outputs.pass == 'false'
+        uses: actions/ai-inference@v1
+        with:
+          model: openai/gpt-4o
+          system-prompt: |
+            Your previous patch failed self-check. Produce a corrected JSON
+            patch (same schema as before). Read the error log carefully
+            and fix the root cause — do NOT just format-hack around it.
+            If the errors suggest the original instruction was not fully
+            implementable, shrink the scope: return only files you CAN
+            reliably fix, and explain the rest in `plan`.
+          prompt: |
+            # Original instruction
+            ${{ steps.context.outputs.instruction }}
+
+            # Your first attempt's plan
+            ${{ steps.apply1.outputs.plan }}
+
+            # Self-check errors (biome + typecheck, tail):
+            ```
+            ${{ steps.check1.outputs.errors }}
+            ```
+
+            Return a corrected JSON patch.
+          max-tokens: 4000
+
+      - name: Apply patch (attempt 2)
+        id: apply2
+        if: steps.check1.outputs.pass == 'false'
+        uses: actions/github-script@v7
+        env:
+          AI_OUTPUT: ${{ steps.ai2.outputs.response }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const path = require('node:path');
+            // Revert attempt 1 first so attempt 2 applies to clean HEAD.
+            const {execSync} = require('node:child_process');
+            execSync('git checkout -- .', {stdio: 'inherit'});
+            execSync('git clean -fd', {stdio: 'inherit'});
+
+            let raw = (process.env.AI_OUTPUT || '').trim();
+            raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
+            let parsed;
+            try {
+              parsed = JSON.parse(raw);
+            } catch {
+              core.setOutput('success', 'false');
+              return;
+            }
+            const files = Array.isArray(parsed.files) ? parsed.files : [];
+            if (files.length === 0) {
+              core.setOutput('success', 'false');
+              return;
+            }
+            for (const f of files) {
+              const abs = path.join(process.cwd(), f.path);
+              fs.mkdirSync(path.dirname(abs), {recursive: true});
+              fs.writeFileSync(abs, f.content, 'utf8');
+            }
+            core.setOutput('plan', parsed.plan || '');
+            core.setOutput('pr_title', parsed.pr_title || 'chore: ai-generated fix (retry)');
+            core.setOutput('pr_body', parsed.pr_body || '');
+            core.setOutput('file_count', String(files.length));
+            core.setOutput('success', 'true');
+
+      - name: Self-check round 2
+        id: check2
+        if: steps.apply2.outputs.success == 'true'
+        run: |
+          set +e
+          pnpm exec biome check --write . > /dev/null 2>&1
+          BIOME_EXIT=$?
+          pnpm -r --if-present --parallel --filter='./packages/*' typecheck > /dev/null 2>&1
+          TSC_EXIT=$?
+          set -e
+          if [ "$BIOME_EXIT" -eq 0 ] && [ "$TSC_EXIT" -eq 0 ]; then
+            echo "pass=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "pass=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide final outcome
+        id: final
+        run: |
+          # Priority: attempt1 pass > attempt2 pass > degrade
+          if [ "${{ steps.check1.outputs.pass }}" = "true" ]; then
+            echo "mode=pr"       >> "$GITHUB_OUTPUT"
+            echo "source=attempt1" >> "$GITHUB_OUTPUT"
+            echo "plan<<EOFX"    >> "$GITHUB_OUTPUT"
+            echo "${{ steps.apply1.outputs.plan }}"     >> "$GITHUB_OUTPUT"
+            echo "EOFX"          >> "$GITHUB_OUTPUT"
+            echo "title=${{ steps.apply1.outputs.pr_title }}" >> "$GITHUB_OUTPUT"
+            echo "file_count=${{ steps.apply1.outputs.file_count }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.check2.outputs.pass }}" = "true" ]; then
+            echo "mode=pr"       >> "$GITHUB_OUTPUT"
+            echo "source=attempt2" >> "$GITHUB_OUTPUT"
+            echo "plan<<EOFX"    >> "$GITHUB_OUTPUT"
+            echo "${{ steps.apply2.outputs.plan }}"     >> "$GITHUB_OUTPUT"
+            echo "EOFX"          >> "$GITHUB_OUTPUT"
+            echo "title=${{ steps.apply2.outputs.pr_title }}" >> "$GITHUB_OUTPUT"
+            echo "file_count=${{ steps.apply2.outputs.file_count }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=degrade"  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit + push + open DRAFT PR
+        if: steps.final.outputs.mode == 'pr'
+        uses: actions/github-script@v7
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+          TITLE: ${{ steps.final.outputs.title }}
+          PLAN: ${{ steps.final.outputs.plan }}
+          FILE_COUNT: ${{ steps.final.outputs.file_count }}
+          SOURCE: ${{ steps.final.outputs.source }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ASKER: ${{ steps.context.outputs.asker }}
+          INSTRUCTION: ${{ steps.context.outputs.instruction }}
+        with:
+          script: |
+            const {execSync} = require('node:child_process');
+            const branch = process.env.BRANCH;
+
+            // Commit
+            execSync('git add -A',              {stdio: 'inherit'});
+            execSync(
+              `git commit -m "${process.env.TITLE}" ` +
+              `-m "Triggered by @${process.env.ASKER} on #${process.env.ISSUE_NUMBER}" ` +
+              `-m "Attempt: ${process.env.SOURCE}" ` +
+              `-m "Instruction: ${process.env.INSTRUCTION.replace(/"/g, "'")}"`,
+              {stdio: 'inherit'}
+            );
+            execSync(`git push -u origin ${branch}`, {stdio: 'inherit'});
+
+            // Open DRAFT PR — crucial for the safety story.
+            const body = [
+              '> ⚠️ **This PR was AI-generated.** Review every diff line before marking ready.',
+              '',
+              `Closes #${process.env.ISSUE_NUMBER}`,
+              '',
+              '## 🧭 Plan',
+              '',
+              process.env.PLAN || '_(no plan text)_',
+              '',
+              '## ✅ Self-check',
+              '',
+              `- biome check: passed (on attempt **${process.env.SOURCE}**)`,
+              `- typecheck (packages/*): passed`,
+              `- files touched: **${process.env.FILE_COUNT}**`,
+              '',
+              '## 🧪 Suggested review focus',
+              '',
+              '- Does the plan match the original issue\'s intent?',
+              '- Are there hidden ripple effects the model missed?',
+              '- Does the change warrant a changeset (user-visible?)',
+              '',
+              '---',
+              `<sub>🤖 Generated by \`ai-code-fix.yaml\`, triggered by @${process.env.ASKER}.`,
+              `Always opens as **draft**; you must mark ready-for-review manually.</sub>`,
+            ].join('\n');
+
+            const {data: pr} = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: process.env.TITLE,
+              body,
+              head: branch,
+              base: context.payload.repository.default_branch,
+              draft: true,
+            });
+
+            // Comment the PR link in the originating issue.
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.ISSUE_NUMBER,
+              body: `@${process.env.ASKER} 🔧 Draft PR: #${pr.number} (${pr.html_url})`,
+            });
+
+      - name: Degrade gracefully (post diff as comment)
+        if: steps.final.outputs.mode == 'degrade'
+        run: |
+          # Give the maintainer the AI's best attempt as a diff they
+          # can review or hand-apply. Reverts the working tree first
+          # (commit was never made because we never reached that step
+          # on the failed branch).
+          git checkout -- . || true
+          git clean -fd || true
+          # We still might have changes staged from the attempt2
+          # fall-through; show them in the comment.
+          DIFF_TEXT=$(git diff --unified=3 HEAD 2>/dev/null || echo '(no diff available)')
+          echo "$DIFF_TEXT" > /tmp/degrade.diff
+      - name: Comment degrade outcome
+        if: steps.final.outputs.mode == 'degrade'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ASKER: ${{ steps.context.outputs.asker }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            let diff = '(no diff captured)';
+            try {
+              diff = fs.readFileSync('/tmp/degrade.diff', 'utf8').slice(0, 30_000);
+            } catch {}
+            const body = [
+              `@${process.env.ASKER}`,
+              '',
+              '⚠️ **Both attempts failed self-check.** I did NOT push any branch.',
+              '',
+              'Best-effort diff (for your reference only; likely has issues):',
+              '',
+              '```diff',
+              diff || '(empty)',
+              '```',
+              '',
+              '<sub>🤖 `ai-code-fix.yaml` — safety-first: never push code that fails biome / typecheck.</sub>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.ISSUE_NUMBER,
+              body,
+            });

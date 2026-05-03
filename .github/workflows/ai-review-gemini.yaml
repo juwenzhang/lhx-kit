@@ -1,0 +1,203 @@
+name: 🤖 AI PR Review (Gemini second opinion)
+
+# Secondary AI PR reviewer — runs alongside ai-review-gpt.yaml with a
+# DELIBERATELY DIFFERENT prompt focus so the two comments complement
+# rather than duplicate each other.
+#
+# GPT review is generalist (verdict + concerns + test coverage).
+# Gemini review focuses on:
+#   - Cross-file and architectural impact (multi-package monorepo is Gemini's strength)
+#   - Documentation / comment completeness
+#   - Naming consistency with rest of codebase
+#
+# Running both shows where the two models agree (high-confidence finding)
+# vs disagree (worth a human second look).
+#
+# Also via GitHub Models → zero cost on public repos.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read
+
+concurrency:
+  group: ai-review-gemini-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Gemini review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.type != 'Bot' &&
+      !contains(fromJSON('["NONE", "FIRST_TIME_CONTRIBUTOR"]'),
+                github.event.pull_request.author_association)
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
+          fetch-depth: 2
+
+      - name: Collect PR diff + repo context
+        id: diff
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const {data: files} = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const IGNORE = [
+              /^pnpm-lock\.yaml$/,
+              /^package-lock\.json$/,
+              /^yarn\.lock$/,
+              /\/dist\//,
+              /\/doc_build\//,
+              /\.min\.js$/,
+              /\.map$/,
+            ];
+            const filtered = files.filter(f =>
+              !IGNORE.some(rx => rx.test(f.filename))
+            );
+
+            // Group files by top-level directory so Gemini's
+            // cross-package narrative has a clear scaffold to hang on.
+            const byTopLevel = {};
+            for (const f of filtered) {
+              const top = f.filename.split('/').slice(0, 2).join('/');
+              (byTopLevel[top] ??= []).push(f.filename);
+            }
+            const grouped = Object.entries(byTopLevel)
+              .map(([k, v]) => `- **${k}/** (${v.length} files): ${v.slice(0, 5).join(', ')}${v.length > 5 ? ` … +${v.length - 5} more` : ''}`)
+              .join('\n');
+
+            const MAX_DIFF_BYTES = 150 * 1024;
+            let diff = '';
+            for (const f of filtered) {
+              if (!f.patch) continue;
+              const chunk = `\n\n--- ${f.filename} ---\n${f.patch}`;
+              if (diff.length + chunk.length > MAX_DIFF_BYTES) {
+                diff += `\n\n[… truncated. ${filtered.length - filtered.indexOf(f)} files omitted. …]`;
+                break;
+              }
+              diff += chunk;
+            }
+
+            core.setOutput('diff', diff);
+            core.setOutput('grouped', grouped);
+            core.setOutput('file_count', filtered.length);
+            core.setOutput('pr_title', pr.title);
+            core.setOutput('pr_body', pr.body || '(empty)');
+
+      - name: Call Gemini for cross-file review
+        id: ai
+        uses: actions/ai-inference@v1
+        with:
+          # Gemini 2.5 is Google's mid-tier via GitHub Models. We pick it
+          # specifically for multi-file context — its training leans
+          # that way and it's a distinct voice from GPT.
+          model: google/gemini-2.5-flash
+          system-prompt: |
+            You are a second-opinion code reviewer for lhx-kit, focused on
+            SYSTEMIC concerns that single-file reviewers miss.
+
+            Your output is one Markdown comment with these sections (keep
+            headings exactly; write "—" when a section has nothing to say):
+
+            ## 🧭 Cross-file / architectural observations
+
+            - Does this change cross package boundaries correctly?
+            - Are new types exported from the right package?
+            - Does it introduce a circular dependency risk?
+            - Does any workspace need a version bump it didn't get?
+
+            ## 📝 Documentation & comments
+
+            - Are new public APIs documented (TSDoc / README / apps/docs)?
+            - Are the intent-explaining comments for non-obvious code present?
+            - Does apps/docs need an update this PR forgot?
+
+            ## 🏷️ Naming & consistency
+
+            - Do new identifiers match the codebase's conventions
+              (kebab-case dirs, camelCase functions, PascalCase types)?
+            - Are option flags consistent with existing lhx-cli commands?
+
+            ## 🔁 Potential ripple effects
+
+            Files NOT in this diff that may need follow-up changes. Be specific.
+
+            Rules:
+            - Reply in the language of the PR title.
+            - Be concrete; reference filenames.
+            - Don't duplicate the GPT review's role — focus on YOUR lens.
+            - Don't invent facts; say "cannot tell from diff alone" if unsure.
+            - Never claim to have made changes.
+            - End with: `— 🤖 Gemini second-opinion via GitHub Models`
+          prompt: |
+            # PR under review
+
+            **Title**: ${{ steps.diff.outputs.pr_title }}
+            **Total scope**: ${{ steps.diff.outputs.file_count }} files changed
+
+            **Description**:
+            ${{ steps.diff.outputs.pr_body }}
+
+            **Scope breakdown by top-level directory**:
+            ${{ steps.diff.outputs.grouped }}
+
+            **Diff**:
+            ```diff
+            ${{ steps.diff.outputs.diff }}
+            ```
+
+            Now produce the structured cross-file review per the system prompt.
+          max-tokens: 1800
+
+      - name: Post / update Gemini review comment
+        uses: actions/github-script@v7
+        env:
+          AI_RESPONSE: ${{ steps.ai.outputs.response }}
+        with:
+          script: |
+            const MARKER = '<!-- ai-review-gemini-marker -->';
+            const body = [
+              MARKER,
+              process.env.AI_RESPONSE || '_(no response)_',
+              '',
+              '<sub>🤖 Posted by `ai-review-gemini.yaml`. Pairs with the GPT-4o review above/below. Comparing the two is itself a signal — high agreement = higher confidence.</sub>',
+            ].join('\n');
+
+            const {data: existing} = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const prior = existing.find(c => (c.body || '').includes(MARKER));
+            if (prior) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: prior.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
