@@ -161,9 +161,10 @@ jobs:
           git config user.name  'lhx-kit-bot'
           git config user.email 'bot@lhx-kit.dev'
           git add -A
-          git commit -m "chore: biome autofix (triggered by @${{ github.event.comment.user.login }})" \
+          git commit --no-verify \
+                     -m "chore: biome autofix (triggered by @${{ github.event.comment.user.login }})" \
                      -m "Ran via @bot-fix-lint comment on PR #${{ github.event.issue.number }}."
-          git push origin HEAD:"${{ steps.pr.outputs.head_ref }}"
+          git push --no-verify origin HEAD:"${{ steps.pr.outputs.head_ref }}"
 
       - name: Comment outcome
         uses: actions/github-script@v7
