@@ -74,3 +74,21 @@ export function createLogger(options: LoggerOptions = {}): Logger {
 
   return logger;
 }
+
+// ─── [SMOKE TEST] helpers added to trigger AI review ─────────────────
+// This block is intentionally written in a reviewer-bait style so we can
+// validate that ai-review-gpt + ai-review-gemini actually post feedback.
+// It will be removed before merge.
+
+// biome-ignore lint/suspicious/noExplicitAny: smoke test
+export function debugDump(logger: Logger, payload: any): void {
+  // eslint-disable-next-line no-console
+  console.log('DUMP>>>', JSON.stringify(payload));
+  logger.info('dump', payload);
+}
+
+export function formatTimestamp(ts: string | number | Date): string {
+  const d = ts instanceof Date ? ts : new Date(ts as any);
+  // TODO: handle invalid dates
+  return d.toISOString();
+}
