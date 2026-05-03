@@ -348,7 +348,7 @@ jobs:
           POLISH_FILE:  ${{ steps.target.outputs.path }}
         with:
           script: |
-            const {execSync} = require('node:child_process');
+            const {execFileSync} = require('node:child_process');
             const br = process.env.BRANCH;
             const mode = process.env.MODE;
 
@@ -356,9 +356,15 @@ jobs:
               ? `docs: draft new article on "${process.env.ARG}"`
               : `docs: polish ${process.env.POLISH_FILE}`;
 
-            execSync('git add -A', {stdio: 'inherit'});
-            execSync(`git commit --no-verify -m "${commitMsg}" -m "Triggered by @${process.env.ASKER} on #${process.env.ISSUE_NUMBER}"`, {stdio: 'inherit'});
-            execSync(`git push --no-verify -u origin ${br}`, {stdio: 'inherit'});
+            // execFileSync (not execSync) — user-supplied ARG may contain
+            // backticks / $() / "\n" which break shell-interpreted strings.
+            execFileSync('git', ['add', '-A'], {stdio: 'inherit'});
+            execFileSync('git', [
+              'commit', '--no-verify',
+              '-m', commitMsg,
+              '-m', `Triggered by @${process.env.ASKER} on #${process.env.ISSUE_NUMBER}`,
+            ], {stdio: 'inherit'});
+            execFileSync('git', ['push', '--no-verify', '-u', 'origin', br], {stdio: 'inherit'});
 
             const prTitle = commitMsg;
             const prBody = mode === 'draft'

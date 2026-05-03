@@ -394,31 +394,28 @@ jobs:
           INSTRUCTION: ${{ steps.context.outputs.instruction }}
         with:
           script: |
-            const {execSync} = require('node:child_process');
+            const {execSync, execFileSync} = require('node:child_process');
             const branch = process.env.BRANCH;
-
-            // Truncate instruction so commit body cannot trip commitlint's
-            // footer-max-line-length rule (default 100). Full text still
-            // goes into the PR body below.
-            const rawInstruction = (process.env.INSTRUCTION || '').replace(/"/g, "'");
-            const shortInstruction = rawInstruction.length > 72
-              ? rawInstruction.slice(0, 69) + '...'
-              : rawInstruction;
 
             // Commit (--no-verify: the patch already passed our explicit
             // biome + typecheck self-check steps above. Running husky
             // hooks again on the runner is both redundant and dangerous —
             // commitlint in particular has no sane way to see the PR body
             // where the real context lives.)
-            execSync('git add -A',              {stdio: 'inherit'});
-            execSync(
-              `git commit --no-verify -m "${process.env.TITLE}" ` +
-              `-m "Triggered by @${process.env.ASKER} on #${process.env.ISSUE_NUMBER}" ` +
-              `-m "Attempt: ${process.env.SOURCE}" ` +
-              `-m "Instruction: ${shortInstruction}"`,
-              {stdio: 'inherit'}
-            );
-            execSync(`git push --no-verify -u origin ${branch}`, {stdio: 'inherit'});
+            //
+            // We intentionally DO NOT include the user instruction in the
+            // commit body because arbitrary user text may contain shell
+            // metacharacters (backticks, $(...), $VAR) that break even the
+            // carefully-quoted execSync call. The instruction lives in the
+            // PR body instead, where markdown fences make it safe.
+            execFileSync('git', ['add', '-A'], {stdio: 'inherit'});
+            execFileSync('git', [
+              'commit', '--no-verify',
+              '-m', process.env.TITLE,
+              '-m', `Triggered by @${process.env.ASKER} on #${process.env.ISSUE_NUMBER}`,
+              '-m', `Attempt: ${process.env.SOURCE}`,
+            ], {stdio: 'inherit'});
+            execFileSync('git', ['push', '--no-verify', '-u', 'origin', branch], {stdio: 'inherit'});
 
             // Open DRAFT PR — crucial for the safety story.
             const body = [
