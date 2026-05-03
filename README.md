@@ -38,7 +38,7 @@
 | 🧪 Setting up ESLint/Prettier/Husky/Vitest/Playwright eats a whole day | Scaffolded project gets all of it, plus Docker + CI, on day one |
 | 🚀 npm publishing needs long-lived `NPM_TOKEN` secrets | **Trusted Publishing** (GitHub OIDC) — zero secrets, every release signed with provenance |
 | 🤖 Triaging issues by hand is exhausting | **GitHub Models**-powered triage / Q&A / summarize — free, no API key |
-| 👀 PR review, autofix & doc drafting need expensive SaaS bots | Built-in **dual-model PR review** (GPT-4o + Gemini) · `@bot-fix-lint` autofix · `@ai-bot fix` gated code-fix · `@ai-docs` doc assistant — all on free GitHub Models |
+| 👀 PR review, autofix & doc drafting need expensive SaaS bots | Built-in **tri-model PR review** (GPT-4o + Llama 3.3 + DeepSeek V3) · `@bot-fix-lint` autofix · `@ai-bot fix` gated code-fix · `@ai-docs` doc assistant — all on free GitHub Models |
 | 🧩 Scaffolding a new package inside a monorepo is copy-paste-hell | `lhx-cli add package <name>` auto-detects monorepo root, emits tsup + tsconfig + README skeleton, and is backed by a `create-package` skill so AI agents can do it too |
 
 ---
@@ -73,7 +73,8 @@ lhx-kit/
 │   │   ├── ai-assistant.yaml        💬 @ai-bot Q&A on any issue
 │   │   ├── ai-summarize.yaml        🏷️ Label-triggered TL;DR
 │   │   ├── ai-review-gpt.yaml       👀 PR review — GPT-4o (correctness + security)
-│   │   ├── ai-review-gemini.yaml    👀 PR review — Gemini 2.5 (DX + docs)
+│   │   ├── ai-review-llama.yaml     👀 PR review — Llama 3.3 70B (architecture + docs)
+│   │   ├── ai-review-deepseek.yaml  👀 PR review — DeepSeek V3 (reasoning + edge cases)
 │   │   ├── ai-autofix.yaml          🔧 @bot-fix-lint → Biome fix, deterministic (no LLM)
 │   │   ├── ai-code-fix.yaml         🛠️ @ai-bot fix → gated AI patch → self-check → Draft PR
 │   │   └── ai-docs-assistant.yaml   📝 @ai-docs draft/polish — README & docs helper
@@ -141,7 +142,8 @@ Eight workflows, all backed by `actions/ai-inference@v1` + `permissions: models:
 
 **PR lifecycle**
 - **ai-review-gpt** — GPT-4o focuses on correctness, security, breaking changes
-- **ai-review-gemini** — Gemini 2.5 focuses on DX, naming, docs coverage — two perspectives, reviewer picks
+- **ai-review-llama** — Meta Llama 3.3 70B focuses on architecture, docs, naming consistency
+- **ai-review-deepseek** — DeepSeek V3 focuses on edge cases, reasoning chains, test coverage — three independent voices across OpenAI / Meta / DeepSeek training pipelines
 - **ai-autofix** — comment `@bot-fix-lint` on a PR → deterministic `biome check --write`, **no LLM** in the loop (safe, predictable)
 - **ai-code-fix** — comment `@ai-bot fix <hint>` → 4-layer gating (actor perm + file allow-list + diff size cap + human label) → AI patch → self-check (typecheck+lint+test) → one auto-iteration on failure → opens a **Draft PR** (never pushes to main)
 

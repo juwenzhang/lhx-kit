@@ -544,7 +544,7 @@ lhx-kit 仓库里跑着 **8 条 AI workflow**（3 条 issue 自动化 + 5 条 PR
 | 命令 | 作用 | 权限 |
 | --- | --- | --- |
 | `@bot-fix-lint` | 用 Biome 确定性自动修复当前 PR 分支（无 LLM，安全） | OWNER / MEMBER / COLLABORATOR |
-| _(无命令)_ | 每个 PR 打开 / push 时自动 | 自动出 **GPT-4o** + **Gemini 2.5** 两条 review 评论 |
+| _(无命令)_ | 每个 PR 打开 / push 时自动 | 自动出 **GPT-4o** + **Llama 3.3 70B** + **DeepSeek V3** 三条独立 review 评论 |
 
 ### 10.2 Issue 里的命令
 
