@@ -38,6 +38,8 @@
 | 🧪 配 ESLint/Prettier/Husky/Vitest/Playwright 一整天就没了 | 脚手架出来的项目一次性带齐，还顺手给你 Docker + CI |
 | 🚀 npm 发包必须配长期 `NPM_TOKEN` | **Trusted Publishing**（GitHub OIDC）——零 secret，每次发布都带 provenance 签名 |
 | 🤖 手动处理 issue 累到怀疑人生 | 免费 **GitHub Models** 驱动的 issue 自动分类 / 问答 / 总结 |
+| 👀 PR review / autofix / 文档起草都要花大价钱买 SaaS | 内置 **双模型 PR 评审**（GPT-4o + Gemini）· `@bot-fix-lint` 自动修复 · `@ai-bot fix` 带门禁的代码修复 · `@ai-docs` 文档助手 —— 全部跑在免费的 GitHub Models |
+| 🧩 在 monorepo 里新建一个子包全靠复制粘贴 | `lhx-cli add package <name>` 自动识别 monorepo 根、生成 tsup + tsconfig + README 骨架，配套 `create-package` skill，AI agent 也能一行指令搞定 |
 
 ---
 
@@ -45,13 +47,13 @@
 
 | 包 | 版本 | 简介 |
 | --- | --- | --- |
-| [`@lhx-kit/cli`](./packages/cli) | ![npm](https://img.shields.io/npm/v/@lhx-kit/cli.svg) | ⚙️ CLI —— create / add / dev / build / doctor / offline |
+| [`@lhx-kit/cli`](./packages/cli) | ![npm](https://img.shields.io/npm/v/@lhx-kit/cli.svg) | ⚙️ CLI —— create / **add package** / add route|store|mock / dev / build / doctor / offline / skills |
 | [`@lhx-kit/config`](./packages/config) | ![npm](https://img.shields.io/npm/v/@lhx-kit/config.svg) | 🧭 SSOT 配置加载器（zod + jiti） |
 | [`@lhx-kit/runtime`](./packages/runtime) | ![npm](https://img.shields.io/npm/v/@lhx-kit/runtime.svg) | 🧩 浏览器运行时：request / mobile / logger / auth / mock / env / theme / cdn-loader |
 | [`@lhx-kit/renderer`](./packages/renderer) | ![npm](https://img.shields.io/npm/v/@lhx-kit/renderer.svg) | 🎨 配置驱动 UI 渲染器（Vue 3 + React 双端） |
 | [`@lhx-kit/offline`](./packages/offline) | ![npm](https://img.shields.io/npm/v/@lhx-kit/offline.svg) | 📦 离线打包：并发哈希、brotli、inspect |
 | [`@lhx-kit/vite-plugin`](./packages/vite-plugin) | ![npm](https://img.shields.io/npm/v/@lhx-kit/vite-plugin.svg) | ⚡ Vite 插件：MPA 编排 + CDN + chunk 策略（兼容 Rolldown） |
-| [`@lhx-kit/skills`](./packages/skills) | ![npm](https://img.shields.io/npm/v/@lhx-kit/skills.svg) | 🧠 CLI 技能注册表 |
+| [`@lhx-kit/skills`](./packages/skills) | ![npm](https://img.shields.io/npm/v/@lhx-kit/skills.svg) | 🧠 共享技能注册表 —— AI agent 和 CLI 跑**同一份**代码路径（create-package / add-route …） |
 | [`@lhx-kit/tsconfig`](./packages/tsconfig) | ![npm](https://img.shields.io/npm/v/@lhx-kit/tsconfig.svg) | 🗂️ 下游项目共享的 TS 配置 |
 
 ```text
@@ -69,7 +71,12 @@ lhx-kit/
 │   │   ├── rspress-docs-ci-cd.yaml  📘 文档站部署
 │   │   ├── ai-triage.yaml           🤖 新 issue 自动打标签 + 欢迎
 │   │   ├── ai-assistant.yaml        💬 评论 @ai-bot 触发问答
-│   │   └── ai-summarize.yaml        🏷️ 打 ai-summary 标签触发 TL;DR
+│   │   ├── ai-summarize.yaml        🏷️ 打 ai-summary 标签触发 TL;DR
+│   │   ├── ai-review-gpt.yaml       👀 PR 评审 —— GPT-4o（正确性 + 安全）
+│   │   ├── ai-review-gemini.yaml    👀 PR 评审 —— Gemini 2.5（DX + 文档）
+│   │   ├── ai-autofix.yaml          🔧 @bot-fix-lint → Biome 确定性修复（不走 LLM）
+│   │   ├── ai-code-fix.yaml         🛠️ @ai-bot fix → 带门禁的 AI 补丁 → 自检 → Draft PR
+│   │   └── ai-docs-assistant.yaml   📝 @ai-docs draft/polish —— README/文档助手
 │   └── SETUP.md                     📋 一次性仓库配置清单
 ├── .husky/             🐕 pre-commit / commit-msg / pre-push 钩子（biome + typecheck）
 ├── .vscode/            🪄 推荐的工作区设置
@@ -97,6 +104,11 @@ cd my-app && pnpm dev
 make dev-vmpa                    # Vue 3 MPA 跑在 :4173
 make dev-rmpa                    # React MPA 跑在 :4174
 make docs-dev                    # 文档站
+
+# 4. 在本 monorepo 里新建一个子包
+pnpm exec lhx-cli add package my-utility   # 自动识别 monorepo 根、
+                                           # 生成 tsup + tsconfig + README 骨架
+                                           # （CLI 和 create-package skill 走同一条代码路径）
 ```
 
 > 需要 Node.js `>= 18.18.0` 和 pnpm `>= 9`。
@@ -119,11 +131,24 @@ make docs-dev                    # 文档站
 - 完整手册：[CI 策略](https://juwenzhang.github.io/lhx-kit/engineering/ci-strategy)
 
 ### 🤖 AI 自动流 —— 免费（GitHub Models），零 API key
+
+全部 8 条 workflow 基于 `actions/ai-inference@v1` + `permissions: models: read`，不依赖任何外部 API key，也不依赖付费 SaaS：
+
+**Issue 生命周期**
 - **ai-triage** —— 新 issue 自动打标签（最多 5 个）+ body 太短自动打 `needs-reproduction` + 语言自适应欢迎评论
 - **ai-assistant** —— 在任意 issue/PR 评论 `@ai-bot 问题`，机器人读 README + issue 上下文 + 最近 5 条评论后给出扎实答案
 - **ai-summarize** —— 给 issue 打 `ai-summary` 标签，自动生成结构化 TL;DR（要点 / 决议 / 待办 / 下一步）
-- 全部跑在 **GitHub Models**（公开仓库免费，私有仓库有宽松配额），带签名 marker 防止机器人互相无限唤醒
-- 完整手册：[GitHub AI 自动流（零成本）](https://juwenzhang.github.io/lhx-kit/engineering/ai-automation)
+
+**PR 生命周期**
+- **ai-review-gpt** —— GPT-4o 专注正确性、安全、破坏性变更
+- **ai-review-gemini** —— Gemini 2.5 专注 DX、命名、文档覆盖——两种视角，reviewer 自取所需
+- **ai-autofix** —— 在 PR 评论 `@bot-fix-lint` → 直接跑 `biome check --write`，**整个链路不经过 LLM**（确定性强，安全可预期）
+- **ai-code-fix** —— 评论 `@ai-bot fix <提示>` → 4 层门禁（actor 权限 + 文件白名单 + diff 大小上限 + 人工 label）→ AI 补丁 → 自检（typecheck + lint + test）→ 失败自动迭代一次 → 开 **Draft PR**（绝不直接推 main）
+
+**文档工作流**
+- **ai-docs-assistant** —— `@ai-docs draft <主题>` 脚手架一个新 MD；`@ai-docs polish <路径>` 原地润色现有文档——都走 Draft PR
+
+8 条 workflow 都带签名 marker 防机器人互相无限唤醒。完整手册：[GitHub AI 自动流（零成本）](https://juwenzhang.github.io/lhx-kit/engineering/ai-automation) · [AI 评审策略](https://juwenzhang.github.io/lhx-kit/engineering/ai-review-strategy)
 
 ### 🎨 工具选型
 | 关注点 | 工具 | 备注 |
@@ -175,6 +200,9 @@ make check              # lint + typecheck + test（CI 三合一）
 make build              # 所有 workspace
 make build-packages     # 只构建内部包
 make docs-build         # 构建文档站
+
+# 文档维护
+make sync-readmes       # 重新生成所有 @lhx-kit/* 包 README 的 managed footer（幂等）
 
 # 清理
 make clean              # 清除 dist / doc_build 缓存

@@ -38,6 +38,8 @@
 | 🧪 Setting up ESLint/Prettier/Husky/Vitest/Playwright eats a whole day | Scaffolded project gets all of it, plus Docker + CI, on day one |
 | 🚀 npm publishing needs long-lived `NPM_TOKEN` secrets | **Trusted Publishing** (GitHub OIDC) — zero secrets, every release signed with provenance |
 | 🤖 Triaging issues by hand is exhausting | **GitHub Models**-powered triage / Q&A / summarize — free, no API key |
+| 👀 PR review, autofix & doc drafting need expensive SaaS bots | Built-in **dual-model PR review** (GPT-4o + Gemini) · `@bot-fix-lint` autofix · `@ai-bot fix` gated code-fix · `@ai-docs` doc assistant — all on free GitHub Models |
+| 🧩 Scaffolding a new package inside a monorepo is copy-paste-hell | `lhx-cli add package <name>` auto-detects monorepo root, emits tsup + tsconfig + README skeleton, and is backed by a `create-package` skill so AI agents can do it too |
 
 ---
 
@@ -45,13 +47,13 @@
 
 | Package | Version | Description |
 | --- | --- | --- |
-| [`@lhx-kit/cli`](./packages/cli) | ![npm](https://img.shields.io/npm/v/@lhx-kit/cli.svg) | ⚙️ CLI — create / add / dev / build / doctor / offline |
+| [`@lhx-kit/cli`](./packages/cli) | ![npm](https://img.shields.io/npm/v/@lhx-kit/cli.svg) | ⚙️ CLI — create / **add package** / add route|store|mock / dev / build / doctor / offline / skills |
 | [`@lhx-kit/config`](./packages/config) | ![npm](https://img.shields.io/npm/v/@lhx-kit/config.svg) | 🧭 SSOT config loader with zod + jiti |
 | [`@lhx-kit/runtime`](./packages/runtime) | ![npm](https://img.shields.io/npm/v/@lhx-kit/runtime.svg) | 🧩 Browser runtime: request / mobile / logger / auth / mock / env / theme / cdn-loader |
 | [`@lhx-kit/renderer`](./packages/renderer) | ![npm](https://img.shields.io/npm/v/@lhx-kit/renderer.svg) | 🎨 JSON-driven UI renderer for Vue 3 + React |
 | [`@lhx-kit/offline`](./packages/offline) | ![npm](https://img.shields.io/npm/v/@lhx-kit/offline.svg) | 📦 Offline packaging pipeline: concurrent hashing, brotli, inspect |
 | [`@lhx-kit/vite-plugin`](./packages/vite-plugin) | ![npm](https://img.shields.io/npm/v/@lhx-kit/vite-plugin.svg) | ⚡ Vite plugin: MPA orchestration + CDN + chunk strategy (Rolldown-ready) |
-| [`@lhx-kit/skills`](./packages/skills) | ![npm](https://img.shields.io/npm/v/@lhx-kit/skills.svg) | 🧠 Shared skill registry for CLI prompts |
+| [`@lhx-kit/skills`](./packages/skills) | ![npm](https://img.shields.io/npm/v/@lhx-kit/skills.svg) | 🧠 Shared skill registry — AI agents & CLI run the **same** codepaths (create-package, add-route, …) |
 | [`@lhx-kit/tsconfig`](./packages/tsconfig) | ![npm](https://img.shields.io/npm/v/@lhx-kit/tsconfig.svg) | 🗂️ Shared TS configs for downstream projects |
 
 ```text
@@ -69,7 +71,12 @@ lhx-kit/
 │   │   ├── rspress-docs-ci-cd.yaml  📘 Docs site deploy
 │   │   ├── ai-triage.yaml           🤖 New-issue auto labels + welcome
 │   │   ├── ai-assistant.yaml        💬 @ai-bot Q&A on any issue
-│   │   └── ai-summarize.yaml        🏷️ Label-triggered TL;DR
+│   │   ├── ai-summarize.yaml        🏷️ Label-triggered TL;DR
+│   │   ├── ai-review-gpt.yaml       👀 PR review — GPT-4o (correctness + security)
+│   │   ├── ai-review-gemini.yaml    👀 PR review — Gemini 2.5 (DX + docs)
+│   │   ├── ai-autofix.yaml          🔧 @bot-fix-lint → Biome fix, deterministic (no LLM)
+│   │   ├── ai-code-fix.yaml         🛠️ @ai-bot fix → gated AI patch → self-check → Draft PR
+│   │   └── ai-docs-assistant.yaml   📝 @ai-docs draft/polish — README & docs helper
 │   └── SETUP.md                     📋 One-time repo setup checklist
 ├── .husky/             🐕 pre-commit / commit-msg / pre-push hooks (biome + typecheck)
 ├── .vscode/            🪄 Recommended workspace settings
@@ -97,6 +104,11 @@ cd my-app && pnpm dev
 make dev-vmpa                    # Vue 3 MPA on :4173
 make dev-rmpa                    # React MPA on :4174
 make docs-dev                    # Documentation site
+
+# 4. Add a new package inside this monorepo
+pnpm exec lhx-cli add package my-utility   # auto-detects monorepo root,
+                                           # scaffolds tsup + tsconfig + README
+                                           # (CLI + create-package skill share the same codepath)
 ```
 
 > Requires Node.js `>= 18.18.0` and pnpm `>= 9`.
@@ -119,11 +131,24 @@ This repo is not just a scaffold; it's a **real-world reference project** for ho
 - Read the full playbook: [CI strategy](https://juwenzhang.github.io/lhx-kit/engineering/ci-strategy)
 
 ### 🤖 AI automation — free (GitHub Models), zero API keys
-- **ai-triage** — every new issue gets auto-labeled (up to 5 labels), optionally marked `needs-reproduction`, and welcomed in the issue's own language
+
+Eight workflows, all backed by `actions/ai-inference@v1` + `permissions: models: read`, no external API keys, no paid SaaS:
+
+**Issue lifecycle**
+- **ai-triage** — every new issue gets auto-labeled (up to 5), optionally marked `needs-reproduction`, and welcomed in the issue's own language
 - **ai-assistant** — comment `@ai-bot <question>` on any issue/PR; the bot reads README + issue context + last 5 comments and replies with grounded answers
 - **ai-summarize** — label an issue `ai-summary` and get a structured TL;DR (key points / decisions / open questions / next step)
-- All three run on **GitHub Models** (free for public repos, no secret keys), with signature markers to prevent bot-loop-back
-- Read the full playbook: [GitHub AI automation (zero-cost)](https://juwenzhang.github.io/lhx-kit/engineering/ai-automation)
+
+**PR lifecycle**
+- **ai-review-gpt** — GPT-4o focuses on correctness, security, breaking changes
+- **ai-review-gemini** — Gemini 2.5 focuses on DX, naming, docs coverage — two perspectives, reviewer picks
+- **ai-autofix** — comment `@bot-fix-lint` on a PR → deterministic `biome check --write`, **no LLM** in the loop (safe, predictable)
+- **ai-code-fix** — comment `@ai-bot fix <hint>` → 4-layer gating (actor perm + file allow-list + diff size cap + human label) → AI patch → self-check (typecheck+lint+test) → one auto-iteration on failure → opens a **Draft PR** (never pushes to main)
+
+**Docs workflow**
+- **ai-docs-assistant** — `@ai-docs draft <topic>` scaffolds a new MD stub; `@ai-docs polish <path>` rewrites an existing doc in place — both open Draft PRs
+
+All eight carry signature markers to prevent bot-loop-back. Read the full playbook: [GitHub AI automation (zero-cost)](https://juwenzhang.github.io/lhx-kit/engineering/ai-automation) · [AI review strategy](https://juwenzhang.github.io/lhx-kit/engineering/ai-review-strategy)
 
 ### 🎨 Tooling
 | Concern | Tool | Notes |
@@ -175,6 +200,9 @@ make check              # lint + typecheck + test (CI bundle)
 make build              # Build every workspace
 make build-packages     # Only internal packages
 make docs-build         # Build the docs site
+
+# Docs maintenance
+make sync-readmes       # Regenerate the managed footer inside every @lhx-kit/* README (idempotent)
 
 # Clean
 make clean              # Remove dist/doc_build caches
