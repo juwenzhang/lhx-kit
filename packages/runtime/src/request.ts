@@ -60,8 +60,9 @@ export function createRequest(options: CreateRequestOptions = {}): AxiosInstance
   if (options.dedupe) {
     instance.interceptors.request.use(async config => {
       const key = requestKey(config);
-      if (pending.has(key)) {
-        const existing = await pending.get(key)!;
+      const inflight = pending.get(key);
+      if (inflight) {
+        const existing = await inflight;
         (config as InternalAxiosRequestConfig & {__lhx_dedupe?: AxiosResponse}).__lhx_dedupe = existing;
       }
       return config;
@@ -97,7 +98,8 @@ export function createRequest(options: CreateRequestOptions = {}): AxiosInstance
   instance.request = (async (config: AxiosRequestConfig) => {
     if (options.dedupe) {
       const key = requestKey(config);
-      if (pending.has(key)) return pending.get(key)!;
+      const cached = pending.get(key);
+      if (cached) return cached;
       const promise = originalRequest(config).finally(() => pending.delete(key));
       pending.set(key, promise as Promise<AxiosResponse>);
       return promise;

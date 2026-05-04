@@ -29,12 +29,10 @@ import {RESOLVED_VIRTUAL_ID, renderVirtualModuleCode, serializeConfig, VIRTUAL_I
  *
  * Vite 8+ exposes `rolldownVersion` as a top-level named export when the
  * underlying bundler is Rolldown; on Rollup-backed versions (Vite 5/6/7)
- * the export is absent. We keep the check defensive so old Vite versions
- * still work (optional chaining + `any` cast — the type only exists on
- * the Vite 8+ typings).
+ * the export is absent. We probe via an `unknown`-cast typed shape so old
+ * Vite typings still work — the field is only declared on Vite 8+.
  */
-// biome-ignore lint/suspicious/noExplicitAny: probe an optional export without failing on old typings
-const IS_ROLLDOWN = Boolean((viteExports as any).rolldownVersion);
+const IS_ROLLDOWN = Boolean((viteExports as unknown as {rolldownVersion?: unknown}).rolldownVersion);
 
 /**
  * Built-in defaults. Every value is overridable via `LhxKitPluginOptions`.
@@ -136,7 +134,7 @@ function pickActivePages(project: ResolvedProjectConfig, override: string[] | un
   let only = override;
   if (!only) {
     const fromEnv = process.env.LHX_PAGES;
-    if (fromEnv && fromEnv.trim()) {
+    if (fromEnv?.trim()) {
       only = fromEnv
         .split(',')
         .map(s => s.trim())
@@ -540,10 +538,14 @@ function rewriteCdnImports(code: string, externals: Record<string, string>): str
     if (m) {
       defaultName = m[1];
       bracePart = m[2];
-    } else if ((m = /^\{([^}]*)\}$/.exec(trimmed))) {
-      bracePart = m[1];
-    } else if ((m = /^([\w$]+)$/.exec(trimmed))) {
-      defaultName = m[1];
+    } else {
+      m = /^\{([^}]*)\}$/.exec(trimmed);
+      if (m) {
+        bracePart = m[1];
+      } else {
+        m = /^([\w$]+)$/.exec(trimmed);
+        if (m) defaultName = m[1];
+      }
     }
 
     const lines: string[] = [];
@@ -607,7 +609,8 @@ function computeChunkOwners(
     const visited = new Set<string>();
     const queue: string[] = [entryChunk];
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (!current) break;
       if (visited.has(current)) continue;
       visited.add(current);
 
@@ -788,8 +791,7 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
                     ...(IS_ROLLDOWN ? {} : {experimentalMinChunkSize: 10 * 1024})
                   }
                 })
-            // biome-ignore lint/suspicious/noExplicitAny: see rollupOptions comment above
-          } as any
+          } as unknown as NonNullable<UserConfig['build']>['rollupOptions']
         },
         // JS minifier options. Historically under `esbuild:
         // {drop, pure, legalComments}`. Vite 8 (Rolldown) switched to Oxc
@@ -804,8 +806,7 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
                 drop: env.command === 'build' ? ['debugger'] : undefined,
                 pure: env.command === 'build' ? ['console.log', 'console.debug', 'console.trace'] : undefined,
                 legalComments: 'none'
-                // biome-ignore lint/suspicious/noExplicitAny: `oxc` is only in Vite 8+ typings
-              } as any
+              } as unknown as Record<string, unknown>
             }
           : {
               esbuild: {
@@ -900,7 +901,7 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
         // 1. Rewrite each page HTML: <intermediateDir>/<name>.html → per-page path.
         const intermediatePrefix = c.opts.intermediateDir.endsWith('/')
           ? c.opts.intermediateDir
-          : c.opts.intermediateDir + '/';
+          : `${c.opts.intermediateDir}/`;
         for (const [assetName, asset] of Object.entries(bundle)) {
           if (!assetName.startsWith(intermediatePrefix) || !assetName.endsWith('.html')) continue;
           const pageName = assetName.slice(intermediatePrefix.length, -'.html'.length);
@@ -995,15 +996,15 @@ export function lhxKit(options: LhxKitPluginOptions = {}): Plugin[] {
       const c = ctx;
       const firstPage = c.activePageNames[0];
       if (!firstPage) return;
-      const firstPageClean = '/' + firstPage;
-      const firstPageHtml = '/' + c.project.pages[firstPage].filename;
+      const firstPageClean = `/${firstPage}`;
+      const firstPageHtml = `/${c.project.pages[firstPage].filename}`;
 
       const routeMap: Record<string, string> = {};
       for (const [name, htmlPath] of Object.entries(c.intermediateHtml)) {
         const page = c.project.pages[name];
-        const rel = '/' + relative(c.project.rootDir, htmlPath).replaceAll('\\', '/');
-        routeMap['/' + page.filename] = rel;
-        if (c.opts.cleanUrls) routeMap['/' + name] = rel;
+        const rel = `/${relative(c.project.rootDir, htmlPath).replaceAll('\\', '/')}`;
+        routeMap[`/${page.filename}`] = rel;
+        if (c.opts.cleanUrls) routeMap[`/${name}`] = rel;
       }
 
       server.middlewares.use((req, res, next) => {
@@ -1131,7 +1132,8 @@ function patchHtmlReferences(bundle: Record<string, unknown>): void {
   for (const asset of Object.values(bundle)) {
     const a = asset as {type?: string; fileName?: string};
     if (a.type !== 'chunk' || !a.fileName) continue;
-    const base = a.fileName.split('/').pop()!;
+    const base = a.fileName.split('/').pop();
+    if (!base) continue;
     chunkByBasename.set(base, a.fileName);
   }
 
@@ -1147,15 +1149,14 @@ function patchHtmlReferences(bundle: Record<string, unknown>): void {
       // and are already relocated to their final places.
       if (!/\.[cm]?js(\?|$)/.test(url)) return match;
       const withoutQuery = url.split('?')[0];
-      const basename = withoutQuery.split('/').pop()!;
+      const basename = withoutQuery.split('/').pop();
+      if (!basename) return match;
       const target = chunkByBasename.get(basename);
       if (!target) return match;
 
-      // Keep whatever prefix the user asked for (CDN URL, base path, etc.),
-      // but swap the tail after the last `/assets/` or relative head.
-      // Strategy: replace `url` with the same scheme/host/base + `/<target>`.
-      const prefix = url.slice(0, url.length - withoutQuery.split('/').slice(-2).join('/').length);
-      // Fallback: recompute a clean prefix by stripping the old chunk tail.
+      // Recompute a clean prefix by stripping the old chunk tail. Keeps whatever
+      // prefix the user asked for (CDN URL, base path, etc.) but swaps the tail
+      // after the last `/assets/` or relative head.
       const oldTail = withoutQuery.split('/').slice(-2).join('/'); // e.g. `assets/home-xxx.js`
       const cleanPrefix = withoutQuery.endsWith(oldTail)
         ? withoutQuery.slice(0, withoutQuery.length - oldTail.length)
@@ -1202,7 +1203,8 @@ function patchChunkImports(bundle: Record<string, unknown>): void {
     const a = asset as {type?: string; fileName?: string};
     if (a.type !== 'chunk' && a.type !== 'asset') continue;
     if (!a.fileName) continue;
-    const base = a.fileName.split('/').pop()!;
+    const base = a.fileName.split('/').pop();
+    if (!base) continue;
     // Only track files we might legitimately reference from chunk code.
     if (!/\.(css|[cm]?js)$/.test(base)) continue;
     fileByBasename.set(base, a.fileName);
@@ -1229,7 +1231,8 @@ function patchChunkImports(bundle: Record<string, unknown>): void {
     // dist root WITHOUT a leading slash". Rewrite to the final path minus
     // leading slash so the runtime fetches the correct URL.
     code = code.replace(/(["'])(assets\/[\w.-]+\.(?:[cm]?js|css))\1/g, (match, quote, pathStr) => {
-      const basename = pathStr.split('/').pop()!;
+      const basename = pathStr.split('/').pop();
+      if (!basename) return match;
       const target = fileByBasename.get(basename);
       if (!target) return match;
       return `${quote}${target}${quote}`;

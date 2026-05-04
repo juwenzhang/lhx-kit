@@ -36,7 +36,9 @@ function findNode(
   const queue: Array<{parent: ComponentSchema[]; index: number}> = [];
   for (let i = 0; i < nodes.length; i++) queue.push({parent: nodes, index: i});
   while (queue.length > 0) {
-    const {parent, index} = queue.shift()!;
+    const head = queue.shift();
+    if (!head) break;
+    const {parent, index} = head;
     const node = parent[index];
     if (!node) continue;
     if (match(node)) return {parent, index};

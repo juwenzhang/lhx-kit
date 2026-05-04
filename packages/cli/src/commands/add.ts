@@ -805,7 +805,7 @@ async function addPackage(context: CliContext, name: string, options: AddOptions
   await fse.ensureDir(pkgDir);
   await fse.ensureDir(join(pkgDir, 'src'));
 
-  const files: Array<[string, string]> = [
+  const files: [string, string][] = [
     ['package.json', applyTemplate(PKG_PACKAGE_JSON, vars)],
     ['tsconfig.json', applyTemplate(PKG_TSCONFIG, vars)],
     ['tsup.config.ts', applyTemplate(PKG_TSUP_CONFIG, vars)],

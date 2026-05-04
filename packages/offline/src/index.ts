@@ -264,7 +264,7 @@ function buildOfflineFileFilter(config: OfflineConfig): (relPath: string) => boo
 
     if (excludeFilenames.has(base.toLowerCase())) return false;
     for (const prefix of excludePaths) {
-      if (prefix && (normalized === prefix || normalized.startsWith(prefix + '/'))) {
+      if (prefix && (normalized === prefix || normalized.startsWith(`${prefix}/`))) {
         return false;
       }
     }
@@ -474,7 +474,7 @@ async function regeneratePrecompressedSiblings(htmlPath: string): Promise<void> 
   const gzPath = `${htmlPath}.gz`;
   const [hasBr, hasGz] = await Promise.all([fse.pathExists(brPath), fse.pathExists(gzPath)]);
 
-  const tasks: Array<Promise<void>> = [];
+  const tasks: Promise<void>[] = [];
   if (hasBr) {
     tasks.push(
       brotliAsync(buf, {
@@ -604,7 +604,7 @@ function collectWarnings(manifest: OfflineManifest): string[] {
   for (const page of manifest.pages) {
     // Page directory is the first path segment of page.file, e.g.
     // `home/index.html` → `home/`. Anything under that prefix counts.
-    const pageDir = page.file.includes('/') ? page.file.split('/')[0] + '/' : '';
+    const pageDir = page.file.includes('/') ? `${page.file.split('/')[0]}/` : '';
     if (!pageDir) continue;
     const jsChunks = assetPaths.filter(p => p.startsWith(pageDir) && /\.[cm]?js$/.test(p));
     if (jsChunks.length === 0) {

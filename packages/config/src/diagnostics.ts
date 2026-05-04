@@ -23,7 +23,7 @@ export function diagnosticsFromZod(err: ZodError, source: string): Diagnostic[] 
     // zod 4 widened `issue.path` to `PropertyKey[]` (can include `symbol`).
     // Collapse to (string | number)[] — our schemas never use symbol keys,
     // and `String(sym)` produces `"Symbol(foo)"` which is a safe fallback.
-    path: (issue.path as ReadonlyArray<PropertyKey>).map(seg => (typeof seg === 'number' ? seg : String(seg))),
+    path: (issue.path as readonly PropertyKey[]).map(seg => (typeof seg === 'number' ? seg : String(seg))),
     source
   }));
 }
@@ -32,7 +32,7 @@ export function formatDiagnostics(diagnostics: Diagnostic[]): string {
   return diagnostics
     .map(d => {
       const prefix = `[${d.level}] ${d.code}`;
-      const where = d.path && d.path.length ? ` at ${d.path.join('.')}` : '';
+      const where = d.path?.length ? ` at ${d.path.join('.')}` : '';
       const src = d.source ? ` (${d.source})` : '';
       return `${prefix}${where}${src}: ${d.message}`;
     })

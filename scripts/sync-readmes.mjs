@@ -26,7 +26,7 @@
  * block at the end of the file (preceded by a thematic break).
  */
 
-import {readdir, readFile, stat, writeFile} from 'node:fs/promises';
+import {readdir, readFile, writeFile} from 'node:fs/promises';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -42,7 +42,7 @@ const END = '<!-- lhx-readme-footer:end -->';
 /**
  * Build the English footer block for a given package.
  */
-function enFooter({pkgName, shortName}) {
+function enFooter({pkgName}) {
   const badgeSlug = encodeURIComponent(pkgName);
   return [
     BEGIN,
@@ -85,7 +85,7 @@ function enFooter({pkgName, shortName}) {
 /**
  * Chinese footer — same content, localised.
  */
-function zhFooter({pkgName, shortName}) {
+function zhFooter({pkgName}) {
   const badgeSlug = encodeURIComponent(pkgName);
   return [
     BEGIN,

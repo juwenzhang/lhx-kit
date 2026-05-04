@@ -9,7 +9,9 @@
 
   "access": "public",
 
-  "fixed": [
+  "fixed": [],
+
+  "linked": [
     [
       "@lhx-kit/config",
       "@lhx-kit/runtime",
@@ -21,8 +23,6 @@
       "@lhx-kit/tsconfig"
     ]
   ],
-
-  "linked": [],
 
   "updateInternalDependencies": "patch",
 

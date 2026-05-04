@@ -260,6 +260,7 @@ export async function runDoctorCommand(context: CliContext): Promise<void> {
         name: `prefetch: ${rule.name}`,
         ok: missing.length === 0,
         detail: missing.length ? `apiUrl placeholders missing keys: ${missing.join(', ')}` : rule.apiUrl,
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder text shown to users
         hint: 'Declare each ${var} placeholder under prefetch[].keys'
       });
     }

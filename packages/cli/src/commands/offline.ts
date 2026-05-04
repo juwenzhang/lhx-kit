@@ -39,7 +39,7 @@ function printInspection(target: string, result: InspectionResult): void {
     info('top assets:');
     for (const asset of result.largeAssets) info(`  - ${asset.path} ${formatBytes(asset.size)}`);
   }
-  if (result.warnings && result.warnings.length) {
+  if (result.warnings?.length) {
     // Heuristic warnings (e.g. "page has no .js chunk") are printed but do
     // NOT flip `valid`. Callers that want CI to fail on warnings can wire
     // a `--strict` flag on top of this output in the future.

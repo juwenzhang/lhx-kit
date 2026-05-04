@@ -47,7 +47,7 @@ export function renderPageHtml(ctx: HtmlRenderContext): string {
   }
 
   const entryRel = relative(project.rootDir, resolve(project.rootDir, page.entry)).replaceAll('\\', '/');
-  const entryHref = '/' + entryRel;
+  const entryHref = `/${entryRel}`;
 
   let rendered = source.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, token: string) => {
     if (token === 'title') return escapeHtml(page.title);
@@ -75,7 +75,7 @@ export function rewriteModuleScriptWithCdnGate(html: string, cdn: HtmlCdnInjecti
   const srcPattern = /<script[^>]*\btype=["']module["'][^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/i;
   const altPattern = /<script[^>]*\bsrc=["']([^"']+)["'][^>]*\btype=["']module["'][^>]*>\s*<\/script>/i;
 
-  const replacer = (match: string, entryHref: string) => `<script>${cdn.gateScriptFor(entryHref)}</script>`;
+  const replacer = (_match: string, entryHref: string) => `<script>${cdn.gateScriptFor(entryHref)}</script>`;
 
   if (srcPattern.test(html)) return html.replace(srcPattern, replacer);
   if (altPattern.test(html)) return html.replace(altPattern, replacer);
@@ -86,16 +86,16 @@ function injectCdnHeadBlock(html: string, cdn: HtmlCdnInjection): string {
   // Resource hints live BEFORE the loader script so the browser starts DNS
   // resolution / TLS handshake / preload fetch as early as possible.
   const hints = renderCdnResourceHints(cdn.tagsHtml);
-  const headBlock =
-    [
-      '    <!-- lhx-kit: CDN loader -->',
-      hints,
-      `    <script>${cdn.loaderScript}</script>`,
-      cdn.tagsHtml,
-      '    <!-- /lhx-kit: CDN loader -->'
-    ]
-      .filter(Boolean)
-      .join('\n') + '\n  ';
+  const headBlockBody = [
+    '    <!-- lhx-kit: CDN loader -->',
+    hints,
+    `    <script>${cdn.loaderScript}</script>`,
+    cdn.tagsHtml,
+    '    <!-- /lhx-kit: CDN loader -->'
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const headBlock = `${headBlockBody}\n  `;
 
   if (html.includes('</head>')) {
     return html.replace('</head>', `${headBlock}</head>`);
@@ -120,8 +120,7 @@ function injectCdnHeadBlock(html: string, cdn: HtmlCdnInjection): string {
 function renderCdnResourceHints(tagsHtml: string): string {
   const urls: string[] = [];
   const re = /<script\s+src="(https?:\/\/[^"]+)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(tagsHtml)) !== null) urls.push(m[1]);
+  for (const m of tagsHtml.matchAll(re)) urls.push(m[1]);
   if (urls.length === 0) return '';
 
   const lines: string[] = [];
