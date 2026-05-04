@@ -49,15 +49,33 @@ git add .changeset/ && commit              │
 
 ```json
 {
-  "$schema": "https://unpkg.com/@changesets/config@latest/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
+  "changelog": ["@changesets/changelog-github", { "repo": "juwenzhang/lhx-kit" }],
   "commit": false,
-  "fixed": [["@lhx-kit/*"]],
-  "linked": [],
-  "access": "public",
   "baseBranch": "master",
+  "access": "public",
+  "fixed": [],
+  "linked": [
+    [
+      "@lhx-kit/config",
+      "@lhx-kit/runtime",
+      "@lhx-kit/renderer",
+      "@lhx-kit/offline",
+      "@lhx-kit/vite-plugin",
+      "@lhx-kit/cli",
+      "@lhx-kit/skills",
+      "@lhx-kit/tsconfig"
+    ]
+  ],
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "@lhx-kit/docs",
+    "@lhx-kit/example-config-demo",
+    "@lhx-kit/example-renderer-react-demo",
+    "@lhx-kit/example-renderer-vue-demo",
+    "rmpa",
+    "vmpa"
+  ]
 }
 ```
 
@@ -65,11 +83,23 @@ git add .changeset/ && commit              │
 
 | 字段 | 值 | 为什么 |
 |---|---|---|
-| `fixed` | `[["@lhx-kit/*"]]` | **所有 `@lhx-kit/*` 包始终用同一个版本号**。改了 cli 也会把 runtime/offline 一起 bump。好处：用户安装任何一个包，搭配的其他包版本天然匹配 |
+| `linked` | 8 个 `@lhx-kit/*` 包列表 | **版本号始终对齐**——改了某个包发版时，整组拉到同一个新版本号；但**没改的包不会被强制重发到 npm**（这点和 `fixed` 不一样）。2026-05 从 `fixed` 切到这里，详见下面的迁移记 |
+| `fixed` | `[]` | 留空。为什么不用 `fixed` —— 见下方迁移说明 |
 | `access` | `public` | scoped 包默认是 private（会上传失败），必须显式声明 public |
 | `baseBranch` | `master` | 部分团队用 main，按实际写 |
 | `commit` | `false` | 让 `changesets/action` 统一处理 commit，不让 CLI 自己提 |
 | `updateInternalDependencies` | `patch` | 内部 workspace 包升级时，依赖它的包也自动 patch——保证 workspace-range 被正确展开 |
+| `ignore` | docs / examples / rmpa / vmpa | 这些是 monorepo 内的 demo 和文档站，不发包；放进 ignore 就不会被 `changeset version` 误升 |
+| `changelog` | `@changesets/changelog-github` | 让 CHANGELOG 自动包含 PR 链接和 commit hash，比默认 changelog 信息更全 |
+
+> **2026-05 迁移记：从 `fixed` 切到 `linked`**
+>
+> 切换前：`"fixed": [["@lhx-kit/*"]]`——8 个包永远共用一个版本号。
+> 切换后：`"linked": [...]` + `"fixed": []`——版本号仍对齐，但只发被改的。
+>
+> 为什么换？`fixed` 模式下每次发版都会把 8 个包全部 bump 到统一新号、全部重新 publish 到 npm，即便其中 7 个没动一行代码。结果就是 `@lhx-kit/tsconfig` 这种纯配置包发了一堆"代码完全相同、只有版本号涨"的版本，CHANGELOG 也跟着出现一大串无意义条目。`linked` 保留了"用户安装任意一个、搭配版本天然兼容"的好处，又消除了空 release 噪声。
+>
+> 详细的写 changeset 实战和易错点见 [Changeset 使用手册](./changeset-handbook)。
 
 ### 1.2 `package.json` 的 scripts
 

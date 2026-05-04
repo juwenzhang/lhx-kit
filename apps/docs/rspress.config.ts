@@ -123,7 +123,9 @@ export default defineConfig({
           items: [
             {text: '专栏总览', link: '/engineering/overview'},
             {text: '🚀 发布流水线：Changesets + Trusted Publishing', link: '/engineering/release-pipeline'},
+            {text: '📝 Changeset 使用手册：什么时候写、怎么写', link: '/engineering/changeset-handbook'},
             {text: '⚙️ CI 策略：paths / 跨平台 / frozen / pre-push', link: '/engineering/ci-strategy'},
+            {text: '🛡️ TypeScript 严禁 any 实战手册', link: '/engineering/typescript-no-any'},
             {text: '🤖 GitHub AI 自动流（零成本）', link: '/engineering/ai-automation'},
             {text: '🎯 AI 协作策略：多模型 review + 受控修复', link: '/engineering/ai-review-strategy'},
             {text: '🎮 AI 命令使用手册（8 条 workflow 速查）', link: '/engineering/ai-commands'},
