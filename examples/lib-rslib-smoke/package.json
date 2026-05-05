@@ -1,7 +1,7 @@
 {
   "name": "lib-rslib-smoke",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "description": "lib-rslib-smoke",
   "type": "module",
   "main": "./dist/index.cjs",

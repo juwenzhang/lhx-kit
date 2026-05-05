@@ -32,6 +32,15 @@
     "@lhx-kit/example-renderer-react-demo",
     "@lhx-kit/example-renderer-vue-demo",
     "rmpa",
-    "vmpa"
+    "vmpa",
+    "@business-smoke/types",
+    "@business-smoke/utils",
+    "@lib-mono-rollup/core",
+    "@lib-mono-rollup/utils",
+    "@lib-mono-smoke/core",
+    "@lib-mono-smoke/utils",
+    "lib-rollup-smoke",
+    "lib-rslib-smoke",
+    "lib-single-smoke"
   ]
 }

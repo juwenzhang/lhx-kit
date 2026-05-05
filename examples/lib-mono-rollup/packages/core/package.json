@@ -1,7 +1,7 @@
 {
   "name": "@lib-mono-rollup/core",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "description": "Core package of the lib-mono-rollup monorepo",
   "type": "module",
   "main": "./dist/index.cjs",

@@ -1,7 +1,7 @@
 {
   "name": "@business-smoke/utils",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "description": "Shared utility functions for business-smoke",
   "type": "module",
   "main": "./src/index.ts",

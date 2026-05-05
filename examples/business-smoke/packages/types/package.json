@@ -1,7 +1,7 @@
 {
   "name": "@business-smoke/types",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "description": "Shared TypeScript types for business-smoke",
   "type": "module",
   "main": "./src/index.ts",

@@ -1,7 +1,7 @@
 {
   "name": "@lib-mono-smoke/core",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "description": "Core package of the lib-mono-smoke monorepo",
   "type": "module",
   "main": "./dist/index.cjs",
