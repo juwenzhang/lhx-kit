@@ -1,0 +1,17 @@
+{
+  "name": "css-styling-styled",
+  "title": "CSS styling: styled-components (React)",
+  "description": "styled-components CSS-in-JS for React.",
+  "appliesTo": ["react-mpa"],
+  "mutexGroup": "css-styling",
+  "isDefault": false,
+  "priority": 400,
+  "packageOverlay": {
+    "dependencies": {
+      "styled-components": "^6.1.13"
+    },
+    "devDependencies": {
+      "@types/styled-components": "^5.1.34"
+    }
+  }
+}

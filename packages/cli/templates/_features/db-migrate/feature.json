@@ -1,0 +1,20 @@
+{
+  "name": "db-migrate",
+  "title": "DB migrations (SQL + runner)",
+  "description": "Adds a migrations/ directory with numbered SQL files and a lightweight migration runner (src/scripts/migrate.ts) using node-postgres. Requires db-pg feature. Scripts: db:migrate, db:rollback, db:status.",
+  "appliesTo": [
+    "express-service", "koa-service", "fastify-service",
+    "express-micro", "koa-micro", "fastify-micro"
+  ],
+  "mutexGroup": null,
+  "isDefault": false,
+  "priority": 600,
+  "files": ["files"],
+  "packageOverlay": {
+    "scripts": {
+      "db:migrate": "tsx src/scripts/migrate.ts up",
+      "db:rollback": "tsx src/scripts/migrate.ts down",
+      "db:status": "tsx src/scripts/migrate.ts status"
+    }
+  }
+}

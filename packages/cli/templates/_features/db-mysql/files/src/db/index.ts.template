@@ -1,0 +1,15 @@
+import {createPool, type Pool} from 'mysql2/promise';
+import {env} from '../env';
+import {logger} from '../logger';
+
+export const db: Pool = createPool({uri: env.DATABASE_URL, connectionLimit: 10});
+
+export async function ping(): Promise<boolean> {
+  const [rows] = await db.query('SELECT 1 AS ok');
+  const first = (rows as Array<{ok?: number}>)[0];
+  return first?.ok === 1;
+}
+
+db.on?.('error', err => {
+  logger.error({err}, 'mysql pool error');
+});

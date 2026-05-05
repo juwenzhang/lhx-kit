@@ -1,0 +1,9 @@
+{
+  "name": "fastify-micro",
+  "title": "Fastify microservice (TypeScript-only)",
+  "description": "A Fastify 5 + TypeScript microservice. Ships Redis (ioredis + BullMQ) built-in, built-in pino logger, zod env, /livez + /readyz health endpoints, multistage Dockerfile, and k8s manifests. Database (pg | mysql | none) is a scaffold-time feature axis.",
+  "category": "backend",
+  "projectType": "service",
+  "extends": "_shared",
+  "tags": ["fastify", "node", "ts", "microservice", "bullmq", "docker", "k8s"]
+}

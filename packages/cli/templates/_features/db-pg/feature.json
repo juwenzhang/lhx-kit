@@ -1,0 +1,47 @@
+{
+  "name": "db-pg",
+  "title": "Database: PostgreSQL (default)",
+  "description": "PostgreSQL via node-postgres. Adds DATABASE_URL env, db client singleton, docker-compose service.",
+  "appliesTo": [
+    "express-service", "koa-service", "fastify-service",
+    "express-micro", "koa-micro", "fastify-micro",
+    "business-mono"
+  ],
+  "mutexGroup": "db",
+  "isDefault": true,
+  "priority": 500,
+  "files": ["files"],
+  "patches": [
+    {
+      "op": "append",
+      "file": ".env.example",
+      "content": "# Postgres\nDATABASE_URL=postgres://user:password@localhost:5432/<%= packageName %>\n"
+    },
+    {
+      "op": "insert-after",
+      "file": "src/env.ts",
+      "anchor": "// lhx:env-schema",
+      "content": "  DATABASE_URL: z.string().url(),"
+    },
+    {
+      "op": "insert-after",
+      "file": "docker-compose.yml",
+      "anchor": "# lhx:db-services",
+      "content": "  postgres:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: password\n      POSTGRES_DB: <%= packageName %>\n    ports:\n      - '5432:5432'\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n    restart: unless-stopped"
+    },
+    {
+      "op": "replace",
+      "file": "docker-compose.yml",
+      "anchor": "volumes: {}",
+      "content": "volumes:\n  postgres_data:"
+    }
+  ],
+  "packageOverlay": {
+    "dependencies": {
+      "pg": "^8.13.0"
+    },
+    "devDependencies": {
+      "@types/pg": "^8.11.0"
+    }
+  }
+}

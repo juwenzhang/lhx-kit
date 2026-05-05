@@ -1,0 +1,9 @@
+{
+  "name": "format-umd",
+  "title": "Format: UMD (umd)",
+  "description": "Emits .umd.js with a global name (CDN-friendly, browser <script> drop-in).",
+  "appliesTo": ["lib-single", "lib-monorepo"],
+  "mutexGroup": null,
+  "isDefault": false,
+  "priority": 800
+}

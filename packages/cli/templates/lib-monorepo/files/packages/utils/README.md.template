@@ -1,0 +1,32 @@
+# @<%= packageName %>/utils
+
+Shared utility helpers for the **<%= appTitle %>** monorepo.
+Depends on `@<%= packageName %>/core` via `workspace:*`.
+
+## Install
+
+```bash
+pnpm add @<%= packageName %>/utils
+```
+
+## Usage
+
+```ts
+import {shout, makeGreeter} from '@<%= packageName %>/utils';
+
+console.log(shout('hello')); // HELLO!
+const greeter = makeGreeter('Hey');
+console.log(greeter.greet('World')); // Hey, World!
+```
+
+## Scripts
+
+```bash
+pnpm build       # build dist/ via <%= libBundlerName %>
+pnpm dev         # watch-rebuild
+pnpm typecheck   # tsc --noEmit
+```
+
+## Output formats
+
+`<%= libFormatsHumanList %>`. Configured in `<%= libBundlerName %>.config.*`.

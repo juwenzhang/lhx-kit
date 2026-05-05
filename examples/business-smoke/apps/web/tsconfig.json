@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@lhx-kit/tsconfig/app-react.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@components/*": ["./src/components/*"],
+      "@business-smoke/types": ["../../packages/types/src/index.ts"],
+      "@business-smoke/utils": ["../../packages/utils/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.json",
+    "src/env.d.ts",
+    "vite.config.ts",
+    "project.config.ts"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

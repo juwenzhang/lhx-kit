@@ -1,0 +1,9 @@
+{
+  "name": "format-esm",
+  "title": "Format: ES Modules (esm)",
+  "description": "Default. Emits .mjs (modern bundlers / browsers / Node ESM).",
+  "appliesTo": ["lib-single", "lib-monorepo"],
+  "mutexGroup": null,
+  "isDefault": true,
+  "priority": 800
+}

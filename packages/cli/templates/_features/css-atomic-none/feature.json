@@ -1,0 +1,9 @@
+{
+  "name": "css-atomic-none",
+  "title": "CSS atomic: none",
+  "description": "No atomic-CSS engine.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-atomic",
+  "isDefault": false,
+  "priority": 300
+}

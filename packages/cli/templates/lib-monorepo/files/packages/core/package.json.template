@@ -1,0 +1,21 @@
+{
+  "name": "@<%= packageName %>/core",
+  "version": "0.0.0",
+  "private": false,
+  "description": "Core package of the <%= appTitle %> monorepo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -1,0 +1,6 @@
+// Stub — overwritten when db-pg or db-mysql feature is applied at scaffold time.
+// If you chose db-none, you can safely delete this file and remove health.ts imports.
+
+export async function ping(): Promise<boolean> {
+  return true;
+}

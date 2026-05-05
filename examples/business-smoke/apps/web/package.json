@@ -1,0 +1,44 @@
+{
+  "name": "@business-smoke/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "business-smoke — web application",
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "lhx-cli dev",
+    "build": "lhx-cli build",
+    "preview": "lhx-cli preview",
+    "info": "lhx-cli info",
+    "doctor": "lhx-cli doctor",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@business-smoke/types": "workspace:*",
+    "@business-smoke/utils": "workspace:*",
+    "@lhx-kit/renderer": "^1.0.0",
+    "@lhx-kit/runtime": "^1.0.0",
+    "antd": "^5.22.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^6.28.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@lhx-kit/config": "^1.0.0",
+    "@lhx-kit/tsconfig": "^1.0.0",
+    "@lhx-kit/vite-plugin": "^1.0.0",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "msw": "^2.6.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "cache-redis",
+  "title": "Cache: Redis (default)",
+  "description": "Redis via ioredis. Adds REDIS_URL env, client singleton, docker-compose service.",
+  "appliesTo": ["express-service", "koa-service", "fastify-service", "business-mono"],
+  "mutexGroup": "cache",
+  "isDefault": true,
+  "priority": 550,
+  "files": ["files"],
+  "patches": [
+    {
+      "op": "append",
+      "file": ".env.example",
+      "content": "# Redis\nREDIS_URL=redis://localhost:6379\n"
+    },
+    {
+      "op": "insert-after",
+      "file": "src/env.ts",
+      "anchor": "// lhx:env-schema",
+      "content": "  REDIS_URL: z.string().url(),"
+    },
+    {
+      "op": "insert-after",
+      "file": "docker-compose.yml",
+      "anchor": "# lhx:cache-services",
+      "content": "  redis:\n    image: redis:7-alpine\n    ports:\n      - '6379:6379'\n    restart: unless-stopped"
+    }
+  ],
+  "packageOverlay": {
+    "dependencies": {
+      "ioredis": "^5.4.0"
+    }
+  }
+}

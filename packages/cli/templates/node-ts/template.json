@@ -1,0 +1,9 @@
+{
+  "name": "node-ts",
+  "title": "Node.js service (TypeScript-only)",
+  "description": "A minimal Node.js + TypeScript service — no web framework. Ships tsx dev-server, tsc prod-build, structured logger (pino), zod env validation, multistage Dockerfile, and graceful shutdown. Swap in Express / Fastify / Koa later without re-scaffolding.",
+  "category": "backend",
+  "projectType": "service",
+  "extends": "_shared",
+  "tags": ["node", "ts", "service", "docker", "pino", "zod"]
+}

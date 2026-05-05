@@ -1,0 +1,20 @@
+/**
+ * @<%= packageName %>/core — main entry.
+ *
+ * The build pipeline (<%= libBundlerName %>) emits the formats you selected at
+ * scaffold: <%= libFormatsHumanList %>.
+ */
+
+export const VERSION = '0.0.0';
+
+export interface CoreOptions {
+  greeting?: string;
+}
+
+export class Core {
+  constructor(private readonly options: CoreOptions = {}) {}
+
+  greet(name: string): string {
+    return `${this.options.greeting ?? 'Hello'}, ${name}!`;
+  }
+}

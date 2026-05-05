@@ -1,0 +1,22 @@
+import {defineConfig} from 'tsup';
+
+/**
+ * tsup config for <%= packageName %>.
+ *
+ * `format` is rendered from the format-* features you selected at scaffold:
+ *   <%= libFormatsHumanList %>.
+ *
+ * Switch formats by editing the array; UMD requires `globalName` (set below).
+ */
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: <%= libFormatsTsupLiteral %>,
+  dts: true,
+  sourcemap: true,
+  clean: true,
+  splitting: false,
+  treeshake: true,
+  globalName: '<%= libUmdGlobalName %>',
+  outExtension: ({format}) =>
+    format === 'esm' ? {js: '.mjs'} : format === 'cjs' ? {js: '.cjs'} : {js: '.umd.js'}
+});

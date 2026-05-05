@@ -1,0 +1,41 @@
+{
+  "name": "@<%= packageName %>/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "<%= appTitle %> — web application",
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {"node": ">=20.0.0", "pnpm": ">=9.0.0"},
+  "scripts": {
+    "dev": "lhx-cli dev",
+    "build": "lhx-cli build",
+    "preview": "lhx-cli preview",
+    "info": "lhx-cli info",
+    "doctor": "lhx-cli doctor",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@<%= packageName %>/types": "workspace:*",
+    "@<%= packageName %>/utils": "workspace:*",
+    "@lhx-kit/renderer": "<%= lhxKitVersionRange %>",
+    "@lhx-kit/runtime": "<%= lhxKitVersionRange %>",
+    "antd": "^5.22.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^6.28.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@lhx-kit/config": "<%= lhxKitVersionRange %>",
+    "@lhx-kit/tsconfig": "<%= lhxKitVersionRange %>",
+    "@lhx-kit/vite-plugin": "<%= lhxKitVersionRange %>",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "msw": "^2.6.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.0"
+  }
+}

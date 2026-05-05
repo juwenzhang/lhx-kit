@@ -1,0 +1,9 @@
+{
+  "name": "business-mono",
+  "title": "Business full-stack monorepo",
+  "description": "A full-stack pnpm monorepo for business applications. Ships apps/api (Express + TypeScript + pg + redis), apps/web (lhx-kit MPA + React 19 with project.config, MSW mocks, stores), packages/types (shared TypeScript contracts), packages/utils (shared helpers). Biome + husky + commitlint + Turborepo.",
+  "category": "business",
+  "projectType": "monorepo",
+  "extends": "_shared",
+  "tags": ["monorepo", "fullstack", "express", "react", "ts", "turborepo", "pnpm"]
+}

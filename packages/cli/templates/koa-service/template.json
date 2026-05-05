@@ -1,0 +1,9 @@
+{
+  "name": "koa-service",
+  "title": "Koa service (TypeScript-only)",
+  "description": "A Koa 2 + TypeScript service. Ships structured logger (pino), zod env validation, multistage Dockerfile, healthz endpoint, and graceful shutdown. Database (pg | mysql | none) and cache (redis | none) are scaffold-time feature axes.",
+  "category": "backend",
+  "projectType": "service",
+  "extends": "_shared",
+  "tags": ["koa", "node", "ts", "service", "docker"]
+}

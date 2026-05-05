@@ -1,0 +1,23 @@
+export function paginate(total: number, page: number, limit: number) {
+  return {
+    total,
+    page,
+    limit,
+    pages: Math.ceil(total / limit),
+    hasNext: page * limit < total,
+    hasPrev: page > 1
+  };
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+  return Object.fromEntries(keys.map(k => [k, obj[k]])) as Pick<T, K>;
+}
+
+export function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+  const keysSet = new Set<PropertyKey>(keys);
+  return Object.fromEntries(Object.entries(obj).filter(([k]) => !keysSet.has(k))) as Omit<T, K>;
+}

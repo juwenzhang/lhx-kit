@@ -1,0 +1,34 @@
+{
+  "name": "@lib-mono-rollup/core",
+  "version": "0.0.0",
+  "private": false,
+  "description": "Core package of the lib-mono-rollup monorepo",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "rollup --config --watch",
+    "build": "rollup --config"
+  },
+  "devDependencies": {
+    "rollup": "^4.30.0",
+    "@rollup/plugin-commonjs": "^28.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "rollup-plugin-dts": "^6.1.0",
+    "tslib": "^2.8.0"
+  }
+}

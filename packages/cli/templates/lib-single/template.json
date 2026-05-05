@@ -1,0 +1,9 @@
+{
+  "name": "lib-single",
+  "title": "TypeScript library (single package)",
+  "description": "A single-package TypeScript library scaffold. Bundler is a feature axis: tsup (default) | rslib | rollup. Output formats are multi-select: esm (default) + cjs + umd. Ships Biome + husky + commitlint + lint-staged + tsconfig + README + LICENSE.",
+  "category": "library",
+  "projectType": "lib",
+  "extends": "_shared",
+  "tags": ["library", "ts", "lib", "tsup", "rslib", "rollup"]
+}

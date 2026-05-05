@@ -1,0 +1,34 @@
+import cors from '@koa/cors';
+import Koa from 'koa';
+import bodyParser from 'koa-bodyparser';
+import compress from 'koa-compress';
+import helmet from 'koa-helmet';
+// lhx:feature-imports
+import {logger} from './logger';
+import {errorMiddleware} from './middlewares/error';
+import {router} from './routes/index';
+
+export function createApp(): Koa {
+  const app = new Koa();
+
+  app.use(async (ctx, next) => {
+    const start = Date.now();
+    await next();
+    logger.info({method: ctx.method, url: ctx.url, status: ctx.status, ms: Date.now() - start}, 'req');
+  });
+  app.use(errorMiddleware);
+  app.use(helmet());
+  app.use(cors());
+  app.use(compress());
+  app.use(bodyParser());
+
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+
+  app.use(ctx => {
+    ctx.status = 404;
+    ctx.body = {error: 'not_found'};
+  });
+
+  return app;
+}

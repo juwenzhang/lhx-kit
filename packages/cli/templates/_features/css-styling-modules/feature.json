@@ -1,0 +1,9 @@
+{
+  "name": "css-styling-modules",
+  "title": "CSS styling: CSS Modules",
+  "description": "Component-scoped styles via CSS Modules. Vite-native, no extra deps.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-styling",
+  "isDefault": true,
+  "priority": 400
+}

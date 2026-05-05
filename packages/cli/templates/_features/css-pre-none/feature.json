@@ -1,0 +1,9 @@
+{
+  "name": "css-pre-none",
+  "title": "CSS preprocessor: none",
+  "description": "Plain CSS only — no Less / Sass.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-preprocessor",
+  "isDefault": false,
+  "priority": 200
+}

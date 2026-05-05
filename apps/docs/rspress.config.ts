@@ -74,6 +74,7 @@ export default defineConfig({
           text: '🧠 深度专题',
           collapsed: false,
           items: [
+            {text: '🚀 部署指南（静态 / 后端 / 微服务 / k8s）', link: '/guide/deployment'},
             {text: '性能优化决策与落地', link: '/guide/performance'},
             {text: 'CDN 外挂方案', link: '/guide/cdn'},
             {text: '移动端适配方案', link: '/guide/mobile-adaptation'}
@@ -84,7 +85,10 @@ export default defineConfig({
         {
           text: '⚙️ CLI',
           collapsed: false,
-          items: [{text: '命令参考', link: '/cli/reference'}]
+          items: [
+            {text: '命令参考', link: '/cli/reference'},
+            {text: '🪄 create 脚手架使用（向导 / 旗标 / 扫尾）', link: '/cli/scaffolding'}
+          ]
         }
       ],
       '/runtime/': [
@@ -137,7 +141,10 @@ export default defineConfig({
         {
           text: '🧱 模板',
           collapsed: false,
-          items: [{text: '模板目录', link: '/templates/catalogue'}]
+          items: [
+            {text: '模板目录', link: '/templates/catalogue'},
+            {text: '🔄 迁移指南（offline / project.config / Biome）', link: '/templates/migration-guide'}
+          ]
         }
       ],
       '/reference/': [

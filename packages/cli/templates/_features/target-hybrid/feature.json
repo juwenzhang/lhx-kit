@@ -1,0 +1,33 @@
+{
+  "name": "target-hybrid",
+  "title": "Target: Hybrid (PC + Mobile responsive)",
+  "description": "Default. Renders pixel-perfect on phones (rem) and stays centered on desktop (max-width clamp).",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "target",
+  "isDefault": true,
+  "priority": 100,
+  "requireAnchors": [
+    {"file": "vite.config.ts", "anchor": "// lhx:postcss-plugins"},
+    {"file": "vite.config.ts", "anchor": "// lhx:vite-imports"}
+  ],
+  "files": ["files"],
+  "patches": [
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:vite-imports",
+      "content": "import pxtorem from 'postcss-pxtorem';"
+    },
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:postcss-plugins",
+      "content": "        pxtorem({rootValue: 75, propList: ['*'], unitPrecision: 5, minPixelValue: 2, exclude: /node_modules/i})"
+    }
+  ],
+  "packageOverlay": {
+    "devDependencies": {
+      "postcss-pxtorem": "^6.1.0"
+    }
+  }
+}

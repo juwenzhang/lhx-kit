@@ -1,0 +1,9 @@
+{
+  "name": "lib-monorepo",
+  "title": "TypeScript library monorepo (multi-package + changesets)",
+  "description": "A multi-package TypeScript library workspace driven by pnpm + changesets. Two starter packages (core, utils) — each gets its own bundler config (tsup default; rslib / rollup also supported via --features). Output formats are multi-select per the format-* axis. Ships Biome + husky + commitlint + lint-staged at the workspace root.",
+  "category": "library",
+  "projectType": "monorepo",
+  "extends": "_shared",
+  "tags": ["library", "monorepo", "ts", "pnpm", "changesets", "tsup", "rslib", "rollup"]
+}

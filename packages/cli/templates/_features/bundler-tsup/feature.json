@@ -1,0 +1,24 @@
+{
+  "name": "bundler-tsup",
+  "title": "Bundler: tsup",
+  "description": "Default. tsup-driven build, dual ESM+CJS friendly, declaration emission via tsc.",
+  "appliesTo": ["lib-single", "lib-monorepo"],
+  "mutexGroup": "bundler",
+  "isDefault": true,
+  "priority": 700,
+  "files": ["files"],
+  "packageOverlay": {
+    "scripts": {
+      "dev": "tsup --watch",
+      "build": "tsup"
+    }
+  },
+  "workspaceOverlay": {
+    "devDependencies": {
+      "tsup": "^8.3.0"
+    }
+  },
+  "monorepoExpand": {
+    "lib-monorepo": "packages/*"
+  }
+}

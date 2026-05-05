@@ -1,0 +1,13 @@
+{
+  "name": "codebuddy-skills",
+  "title": "AI workflow scaffolding (.codebuddy + openspec)",
+  "description": "Adds an openspec/ scaffold and .codebuddy/ skill registry. Empty by default; mirror lhx-kit's openspec-* skills if you want the spec-driven AI flow.",
+  "appliesTo": [],
+  "mutexGroup": null,
+  "isDefault": false,
+  "priority": 500,
+  "files": ["files"],
+  "gitignoreAppend": [
+    ".codebuddy/cache/"
+  ]
+}

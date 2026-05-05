@@ -1,0 +1,44 @@
+{
+  "name": "db-mysql",
+  "title": "Database: MySQL",
+  "description": "MySQL 8 via mysql2. Adds DATABASE_URL env, pool singleton, docker-compose service.",
+  "appliesTo": [
+    "express-service", "koa-service", "fastify-service",
+    "express-micro", "koa-micro", "fastify-micro",
+    "business-mono"
+  ],
+  "mutexGroup": "db",
+  "isDefault": false,
+  "priority": 500,
+  "files": ["files"],
+  "patches": [
+    {
+      "op": "append",
+      "file": ".env.example",
+      "content": "# MySQL\nDATABASE_URL=mysql://user:password@localhost:3306/<%= packageName %>\n"
+    },
+    {
+      "op": "insert-after",
+      "file": "src/env.ts",
+      "anchor": "// lhx:env-schema",
+      "content": "  DATABASE_URL: z.string().url(),"
+    },
+    {
+      "op": "insert-after",
+      "file": "docker-compose.yml",
+      "anchor": "# lhx:db-services",
+      "content": "  mysql:\n    image: mysql:8.0\n    environment:\n      MYSQL_USER: user\n      MYSQL_PASSWORD: password\n      MYSQL_DATABASE: <%= packageName %>\n      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'\n    ports:\n      - '3306:3306'\n    volumes:\n      - mysql_data:/var/lib/mysql\n    restart: unless-stopped"
+    },
+    {
+      "op": "replace",
+      "file": "docker-compose.yml",
+      "anchor": "volumes: {}",
+      "content": "volumes:\n  mysql_data:"
+    }
+  ],
+  "packageOverlay": {
+    "dependencies": {
+      "mysql2": "^3.11.0"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "target-pc",
+  "title": "Target: PC desktop",
+  "description": "Desktop-first viewport, no rem conversion. Suitable for admin panels and desktop SaaS.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "target",
+  "isDefault": false,
+  "priority": 100,
+  "requireAnchors": [
+    {"file": "vite.config.ts", "anchor": "// lhx:postcss-plugins"}
+  ],
+  "files": ["files"]
+}

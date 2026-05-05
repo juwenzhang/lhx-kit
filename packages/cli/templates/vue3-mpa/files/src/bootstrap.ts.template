@@ -1,6 +1,6 @@
 import {setupMobile} from '@lhx-kit/runtime/mobile';
 import {createLogger} from '@lhx-kit/runtime/logger';
-import './styles/reset.css';
+import './styles/target.css';
 
 export const logger = createLogger({
   level: import.meta.env.DEV ? 'debug' : 'info',

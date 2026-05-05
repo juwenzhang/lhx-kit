@@ -1,0 +1,15 @@
+import {setupMobile} from '@lhx-kit/runtime/mobile';
+import {createLogger} from '@lhx-kit/runtime/logger';
+
+export const logger = createLogger({
+  level: import.meta.env.DEV ? 'debug' : 'info',
+  tags: {app: '<%= packageName %>'}
+});
+
+export async function bootstrap(): Promise<void> {
+  if (import.meta.env.DEV) {
+    const {worker} = await import('./mocks/browser');
+    await worker.start({onUnhandledRequest: 'bypass'});
+  }
+  setupMobile({enableRem: false});
+}

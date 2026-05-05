@@ -1,0 +1,9 @@
+{
+  "name": "css-styling-none",
+  "title": "CSS styling: none",
+  "description": "No component-level styling helpers — just plain CSS imports.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-styling",
+  "isDefault": false,
+  "priority": 400
+}

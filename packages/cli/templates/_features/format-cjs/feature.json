@@ -1,0 +1,9 @@
+{
+  "name": "format-cjs",
+  "title": "Format: CommonJS (cjs)",
+  "description": "Emits .cjs (legacy Node, older toolchains).",
+  "appliesTo": ["lib-single", "lib-monorepo"],
+  "mutexGroup": null,
+  "isDefault": false,
+  "priority": 800
+}

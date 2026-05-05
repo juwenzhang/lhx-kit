@@ -1,0 +1,14 @@
+-- Migration: 0001_initial
+-- Created: <%= year %>
+-- Up migration (runs on db:migrate up)
+-- ↓ Do not edit the separator lines ↓
+
+-- migrate:up
+CREATE TABLE IF NOT EXISTS example (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- migrate:down
+DROP TABLE IF EXISTS example;

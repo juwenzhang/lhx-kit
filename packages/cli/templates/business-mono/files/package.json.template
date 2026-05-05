@@ -1,0 +1,27 @@
+{
+  "name": "<%= packageName %>-mono",
+  "version": "0.0.0",
+  "private": true,
+  "description": "<%= appTitle %> — business full-stack monorepo",
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {"node": ">=20.0.0", "pnpm": ">=9.0.0"},
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "typecheck": "turbo run typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "turbo": "^2.5.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -4,7 +4,7 @@ import vue from '@vitejs/plugin-vue';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
 import {TDesignResolver} from 'unplugin-vue-components/resolvers';
-import pxtorem from 'postcss-pxtorem';
+// lhx:vite-imports
 
 export default defineConfig({
   plugins: [
@@ -17,38 +17,25 @@ export default defineConfig({
         'pinia',
         {'@lhx-kit/runtime': ['createRequest', 'createLogger', 'detectEnv', 'setupMobile']}
       ],
-      dts: 'src/types/auto-imports.d.ts',
-      eslintrc: {enabled: true, filepath: './.eslintrc-auto-import.json'}
+      dts: 'src/types/auto-imports.d.ts'
     }),
     Components({
       dts: 'src/types/components.d.ts',
       resolvers: [TDesignResolver({library: 'mobile-vue'})]
     })
+    // lhx:vite-plugins
   ],
   css: {
-    /**
-     * Write `px` in every SFC / CSS file (at 750px design-canvas scale) and
-     * this plugin rewrites them to `rem` at build time. Combined with
-     * `setupMobile({maxWidth: 750})` in `src/bootstrap.ts`, `1rem` equals
-     * `clientWidth / 10`, yielding pixel-perfect 2x-mock rendering on every
-     * phone and a centered "phone emulator" layout on desktop viewports.
-     *
-     * If your designer works on a 375px 1x mock instead, set `rootValue: 37.5`.
-     * `minPixelValue: 2` keeps hairline borders (`1px`) as `1px`; anything
-     * smaller (`0.5px` hairlines from `html.hairlines .foo`) is preserved.
-     */
     postcss: {
       plugins: [
-        pxtorem({
-          rootValue: 75,
-          propList: ['*'],
-          unitPrecision: 5,
-          minPixelValue: 2,
-          // Avoid touching node_modules styles (AntD / element-plus would break).
-          // Third-party mobile libs (Vant, TDesign Mobile) already ship rem.
-          exclude: /node_modules/i
-        })
+        // lhx:postcss-plugins
       ]
+    }
+    // lhx:css-options
+  },
+  resolve: {
+    alias: {
+      // lhx:resolve-alias
     }
   }
 });

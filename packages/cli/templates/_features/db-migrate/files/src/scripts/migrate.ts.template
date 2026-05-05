@@ -1,0 +1,136 @@
+/**
+ * Minimal SQL migration runner for PostgreSQL.
+ * Usage:
+ *   pnpm db:migrate    → apply all pending migrations
+ *   pnpm db:rollback   → roll back the last migration
+ *   pnpm db:status     → list applied / pending migrations
+ */
+import {readdir, readFile} from 'node:fs/promises';
+import {join, resolve} from 'node:path';
+import pg from 'pg';
+
+const {Pool} = pg;
+
+const DATABASE_URL = process.env['DATABASE_URL'];
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL is required');
+  process.exit(1);
+}
+
+const pool = new Pool({connectionString: DATABASE_URL});
+const MIGRATIONS_DIR = resolve(import.meta.dirname ?? __dirname, '../../../migrations');
+
+async function ensureMigrationsTable(): Promise<void> {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS _migrations (
+      id        SERIAL PRIMARY KEY,
+      filename  TEXT NOT NULL UNIQUE,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+}
+
+async function getApplied(): Promise<string[]> {
+  const res = await pool.query<{filename: string}>(
+    'SELECT filename FROM _migrations ORDER BY id'
+  );
+  return res.rows.map(r => r.filename);
+}
+
+async function getFiles(): Promise<string[]> {
+  const files = await readdir(MIGRATIONS_DIR);
+  return files.filter(f => f.endsWith('.sql')).sort();
+}
+
+async function runUp(): Promise<void> {
+  await ensureMigrationsTable();
+  const applied = new Set(await getApplied());
+  const files = await getFiles();
+  const pending = files.filter(f => !applied.has(f));
+
+  if (pending.length === 0) {
+    console.log('No pending migrations.');
+    return;
+  }
+
+  for (const file of pending) {
+    const content = await readFile(join(MIGRATIONS_DIR, file), 'utf8');
+    const upMatch = content.match(/-- migrate:up\n([\s\S]*?)(?=-- migrate:down|$)/);
+    const sql = upMatch?.[1]?.trim();
+    if (!sql) {
+      console.warn(`No -- migrate:up block found in ${file}, skipping.`);
+      continue;
+    }
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(sql);
+      await client.query('INSERT INTO _migrations (filename) VALUES ($1)', [file]);
+      await client.query('COMMIT');
+      console.log(`✓ Applied: ${file}`);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error(`✗ Failed:  ${file}`, err);
+      process.exit(1);
+    } finally {
+      client.release();
+    }
+  }
+}
+
+async function runDown(): Promise<void> {
+  await ensureMigrationsTable();
+  const applied = await getApplied();
+  const last = applied[applied.length - 1];
+  if (!last) {
+    console.log('Nothing to roll back.');
+    return;
+  }
+
+  const content = await readFile(join(MIGRATIONS_DIR, last), 'utf8');
+  const downMatch = content.match(/-- migrate:down\n([\s\S]*?)$/);
+  const sql = downMatch?.[1]?.trim();
+  if (!sql) {
+    console.warn(`No -- migrate:down block found in ${last}.`);
+    return;
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(sql);
+    await client.query('DELETE FROM _migrations WHERE filename = $1', [last]);
+    await client.query('COMMIT');
+    console.log(`✓ Rolled back: ${last}`);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(`✗ Failed:      ${last}`, err);
+    process.exit(1);
+  } finally {
+    client.release();
+  }
+}
+
+async function runStatus(): Promise<void> {
+  await ensureMigrationsTable();
+  const applied = new Set(await getApplied());
+  const files = await getFiles();
+
+  console.log('\nMigrations:');
+  for (const file of files) {
+    const status = applied.has(file) ? '✓ applied ' : '○ pending ';
+    console.log(`  ${status} ${file}`);
+  }
+  if (files.length === 0) console.log('  (none found)');
+}
+
+const command = process.argv[2];
+
+const run = command === 'up' ? runUp : command === 'down' ? runDown : runStatus;
+
+run()
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
+  })
+  .finally(() => pool.end());

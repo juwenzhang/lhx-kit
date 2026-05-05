@@ -1,15 +1,31 @@
 import {existsSync} from 'node:fs';
-import {join} from 'node:path';
+import {basename, join} from 'node:path';
 import fse from 'fs-extra';
 import {downloadTemplate} from 'giget';
+import {FeatureManifestSchema, type FeatureManifestZ, type PatchOp} from './schema';
 
 export interface TemplateManifest {
   name: string;
   title: string;
   description: string;
-  framework: 'vue3' | 'react';
-  projectType: 'spa' | 'h5' | 'admin';
+  framework?: 'vue3' | 'react';
+  category?: 'frontend' | 'backend' | 'library' | 'business';
+  projectType?: 'spa' | 'h5' | 'admin' | 'service' | 'lib' | 'monorepo';
+  /**
+   * If set to `"_shared"`, the template inherits the cross-cutting baseline
+   * files from `templates/_shared/files/` before its own `files/` are copied.
+   */
+  extends?: '_shared';
+  /** Feature names enabled by default when the user runs `-y` and supplies no `--features`. */
+  defaultFeatures?: string[];
   tags?: string[];
+  /**
+   * Extra npm-scope prefixes (e.g. `@my-org/`) to treat as "internal" alongside
+   * the built-in `@lhx-kit/`, `@lhx-cli/`, `@lhx-business/` defaults. Internal
+   * scopes get dynamic `npm view` version resolution and are eligible for the
+   * `--link-workspace` rewrite. See `version-resolver.ts`.
+   */
+  internalPackagePrefixes?: string[];
   features?: TemplateFeatureManifest[];
   postCreate?: string[];
 }
@@ -47,6 +63,25 @@ export interface TemplateVariables {
    * `package.json`.
    */
   lhxKitVersionRange: string;
+  /**
+   * Library scaffold variables (only meaningful when the template is a
+   * library — `lib-single` / `lib-monorepo`). Empty / sensible defaults
+   * for non-library templates so token substitution stays no-op.
+   */
+  /** Selected bundler name: `tsup` | `rslib` | `rollup` (or `''` for non-lib). */
+  libBundlerName: string;
+  /** Comma-separated formats list, e.g. `esm,cjs`. */
+  libFormats: string;
+  /** Human-readable list, e.g. `esm + cjs + umd`. */
+  libFormatsHumanList: string;
+  /** JS array literal of formats for tsup, e.g. `['esm', 'cjs']`. */
+  libFormatsTsupLiteral: string;
+  /** JS array literal for rollup outputs, embedded as the `output` array. */
+  libFormatsRollupOutputsLiteral: string;
+  /** JS array literal for rslib `lib` field. */
+  libFormatsRslibLiteral: string;
+  /** UMD global name derived from `packageName` (PascalCase). */
+  libUmdGlobalName: string;
 }
 
 /**
@@ -72,6 +107,10 @@ export async function listBuiltinTemplates(templatesDir: string): Promise<Templa
   const manifests: TemplateManifest[] = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
+    // Skip infrastructure dirs: `_shared/` (the cross-template baseline) and
+    // `_features/` (cross-template feature catalog) are not selectable
+    // top-level templates.
+    if (entry.name.startsWith('_')) continue;
     const manifestPath = join(templatesDir, entry.name, 'template.json');
     if (!existsSync(manifestPath)) continue;
     manifests.push((await fse.readJson(manifestPath)) as TemplateManifest);
@@ -188,6 +227,23 @@ async function applyFile(
     return targetPath;
   }
 
+  // .gitignore: always append on conflict (shared base + template appendage +
+  // optional feature appendages). Avoids overwriting accumulated rules from
+  // earlier layers and de-dupes line-by-line so re-applying is idempotent.
+  if (basename(targetPath) === '.gitignore' && existsSync(targetPath)) {
+    const previous = await fse.readFile(targetPath, 'utf8');
+    const existingLines = new Set(previous.split('\n').map(l => l.trimEnd()));
+    const appended = rendered
+      .split('\n')
+      .filter(line => !existingLines.has(line.trimEnd()))
+      .join('\n');
+    if (appended.trim().length > 0) {
+      const sep = previous.endsWith('\n') ? '' : '\n';
+      await fse.writeFile(targetPath, `${previous}${sep}${appended}${appended.endsWith('\n') ? '' : '\n'}`);
+    }
+    return targetPath;
+  }
+
   if (targetPath.endsWith('.env') || /\.env\.[^/]+$/.test(targetPath)) {
     if (existsSync(targetPath)) {
       const previous = await fse.readFile(targetPath, 'utf8');
@@ -219,3 +275,257 @@ export async function copyTemplateDir(options: CopyDirOptions): Promise<string[]
 }
 
 export {renderString};
+
+/**
+ * `_shared/` baseline directory under the templates root, copied before any
+ * template-specific files when a template declares `extends: "_shared"`.
+ * Returns `null` when the layer is absent (e.g. running against an old
+ * template tarball that predates the shared layer).
+ */
+export function resolveSharedDir(templatesDir: string): string | null {
+  const candidate = join(templatesDir, '_shared', 'files');
+  return existsSync(candidate) ? candidate : null;
+}
+
+export interface ScaffoldFeature {
+  name: string;
+  /** Absolute directory containing files/, feature.json, patches.json (when present). */
+  directory: string;
+  /** Parsed feature.json (zod-validated). */
+  manifest: FeatureManifestZ;
+}
+
+/**
+ * Load and validate a feature manifest from `<dir>/feature.json`.
+ * Returns `null` for legacy directories that have no manifest yet (e.g. the
+ * original `offline` feature that pre-dates the schema). Callers fall back to
+ * the legacy "copy patchDir verbatim" behavior in that case.
+ */
+export async function loadFeatureManifest(directory: string): Promise<FeatureManifestZ | null> {
+  const manifestPath = join(directory, 'feature.json');
+  if (!existsSync(manifestPath)) return null;
+  const raw = await fse.readJson(manifestPath);
+  return FeatureManifestSchema.parse(raw);
+}
+
+/**
+ * Discover features for a top-level template by scanning `<template>/features/*`
+ * and `_features/` (cross-template features keyed via `appliesTo`). Returns the
+ * subset whose names appear in `selected` and whose manifest applies to the
+ * current template, sorted by priority ascending (lower priority applies first).
+ */
+export async function loadFeaturesForTemplate(
+  templatesDir: string,
+  templateDir: string,
+  templateName: string,
+  selected: string[]
+): Promise<ScaffoldFeature[]> {
+  const found: ScaffoldFeature[] = [];
+
+  const scanDir = async (root: string) => {
+    if (!existsSync(root)) return;
+    const entries = await fse.readdir(root, {withFileTypes: true});
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const dir = join(root, entry.name);
+      const manifest = await loadFeatureManifest(dir);
+      if (!manifest) continue;
+      if (!selected.includes(manifest.name)) continue;
+      if (manifest.appliesTo.length > 0 && !manifest.appliesTo.includes(templateName)) continue;
+      found.push({name: manifest.name, directory: dir, manifest});
+    }
+  };
+
+  await scanDir(join(templateDir, 'features'));
+  await scanDir(join(templatesDir, '_features'));
+
+  return found.sort((a, b) => a.manifest.priority - b.manifest.priority);
+}
+
+/**
+ * Apply a patch op to an already-scaffolded file in `targetDir`. Hard-fails
+ * when the anchor required by the op is missing (per design.md §3.3) — that
+ * indicates the template author removed the anchor and a feature now points
+ * at a void.
+ */
+export async function applyPatchOp(targetDir: string, op: PatchOp, variables: TemplateVariables): Promise<void> {
+  const filePath = join(targetDir, op.file);
+  if (!existsSync(filePath)) {
+    throw new Error(`patch target missing: ${op.file} (op=${op.op})`);
+  }
+  const original = await fse.readFile(filePath, 'utf8');
+
+  if (op.op === 'append') {
+    const rendered = renderString(op.content, variables);
+    const sep = original.endsWith('\n') ? '' : '\n';
+    await fse.writeFile(filePath, `${original}${sep}${rendered}${rendered.endsWith('\n') ? '' : '\n'}`);
+    return;
+  }
+  if (op.op === 'prepend') {
+    const rendered = renderString(op.content, variables);
+    await fse.writeFile(filePath, `${rendered}${rendered.endsWith('\n') ? '' : '\n'}${original}`);
+    return;
+  }
+  if (op.op === 'merge-imports') {
+    const renderedImports = op.imports.map(line => renderString(line, variables));
+    const missing = renderedImports.filter(line => !original.includes(line.trim()));
+    if (missing.length === 0) return;
+    // Insert after the last existing import line, or at top if none exist.
+    const lines = original.split('\n');
+    let lastImport = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*import\b/.test(lines[i] ?? '')) lastImport = i;
+    }
+    const insertion = missing.join('\n');
+    if (lastImport >= 0) {
+      lines.splice(lastImport + 1, 0, insertion);
+    } else {
+      lines.unshift(insertion);
+    }
+    await fse.writeFile(filePath, lines.join('\n'));
+    return;
+  }
+
+  // anchor-based ops
+  if (!original.includes(op.anchor)) {
+    throw new Error(`anchor missing: ${op.anchor} not found in ${op.file} (op=${op.op})`);
+  }
+  const rendered = renderString(op.content, variables);
+  let next: string;
+  if (op.op === 'insert-after') {
+    next = original.replace(op.anchor, `${op.anchor}\n${rendered}`);
+  } else if (op.op === 'insert-before') {
+    next = original.replace(op.anchor, `${rendered}\n${op.anchor}`);
+  } else {
+    // replace
+    next = original.replace(op.anchor, rendered);
+  }
+  await fse.writeFile(filePath, next);
+}
+
+export interface ApplyFeatureOptions {
+  feature: ScaffoldFeature;
+  targetDir: string;
+  variables: TemplateVariables;
+  /**
+   * Top-level template name (e.g. `lib-monorepo`). Required so features can
+   * decide whether to fan out their files+overlay across `packages/*` (see
+   * `FeatureManifest.monorepoExpand`).
+   */
+  templateName: string;
+}
+
+/**
+ * Resolve a single-segment glob like `packages/*` against `targetDir`,
+ * returning the relative subdirectory paths (`packages/core`, `packages/utils`,
+ * …). Restricted to one trailing `/*` for predictability; the schema's
+ * `monorepoExpand` documents this constraint.
+ */
+async function expandSimpleGlob(targetDir: string, pattern: string): Promise<string[]> {
+  const trail = '/*';
+  if (!pattern.endsWith(trail)) {
+    // Treat as literal directory.
+    return existsSync(join(targetDir, pattern)) ? [pattern] : [];
+  }
+  const prefix = pattern.slice(0, -trail.length);
+  const root = join(targetDir, prefix);
+  if (!existsSync(root)) return [];
+  const entries = await fse.readdir(root, {withFileTypes: true});
+  return entries.filter(e => e.isDirectory()).map(e => `${prefix}/${e.name}`);
+}
+
+/**
+ * Apply a manifest-validated feature: copy files/, run patches/, overlay
+ * package.json, append to .gitignore. Each step is idempotent so re-applying
+ * the same feature produces the same result.
+ *
+ * `monorepoExpand` short-circuits for the matching template: the feature's
+ * files + packageOverlay are replicated across each subdirectory that matches
+ * the paired glob, while `patches`, `gitignoreAppend`, and `requireAnchors`
+ * still target the workspace root.
+ */
+export async function applyFeature(options: ApplyFeatureOptions): Promise<string[]> {
+  const {feature, targetDir, variables, templateName} = options;
+
+  if (feature.manifest.requireAnchors) {
+    for (const ra of feature.manifest.requireAnchors) {
+      const path = join(targetDir, ra.file);
+      if (!existsSync(path)) {
+        throw new Error(`feature ${feature.name}: required anchor file missing: ${ra.file}`);
+      }
+      const content = await fse.readFile(path, 'utf8');
+      if (!content.includes(ra.anchor)) {
+        throw new Error(`feature ${feature.name}: anchor ${ra.anchor} missing in ${ra.file}`);
+      }
+    }
+  }
+
+  const written: string[] = [];
+  const expandPattern = feature.manifest.monorepoExpand?.[templateName];
+  const expandTargets = expandPattern ? await expandSimpleGlob(targetDir, expandPattern) : null;
+
+  const writeFilesAndOverlay = async (relPrefix: string): Promise<void> => {
+    const subTargetDir = relPrefix ? join(targetDir, relPrefix) : targetDir;
+
+    const filesDir = join(feature.directory, 'files');
+    if (existsSync(filesDir)) {
+      const filesWritten = await copyTemplateDir({sourceDir: filesDir, targetDir: subTargetDir, variables});
+      written.push(...filesWritten);
+    }
+
+    if (feature.manifest.packageOverlay) {
+      const pkgPath = join(subTargetDir, 'package.json');
+      if (existsSync(pkgPath)) {
+        const existing = (await fse.readJson(pkgPath)) as Record<string, unknown>;
+        const overlay = JSON.parse(renderString(JSON.stringify(feature.manifest.packageOverlay), variables)) as Record<
+          string,
+          unknown
+        >;
+        await fse.writeJson(pkgPath, mergePackageJson(existing, overlay), {spaces: 2});
+      }
+    }
+  };
+
+  if (expandTargets && expandTargets.length > 0) {
+    for (const target of expandTargets) {
+      await writeFilesAndOverlay(target);
+    }
+  } else {
+    await writeFilesAndOverlay('');
+  }
+
+  // `workspaceOverlay` always targets the workspace root regardless of
+  // `monorepoExpand`. For single-pkg templates root === package dir so
+  // this is a no-op if packageOverlay already wrote the same keys there.
+  if (feature.manifest.workspaceOverlay) {
+    const pkgPath = join(targetDir, 'package.json');
+    if (existsSync(pkgPath)) {
+      const existing = (await fse.readJson(pkgPath)) as Record<string, unknown>;
+      const overlay = JSON.parse(renderString(JSON.stringify(feature.manifest.workspaceOverlay), variables)) as Record<
+        string,
+        unknown
+      >;
+      await fse.writeJson(pkgPath, mergePackageJson(existing, overlay), {spaces: 2});
+    }
+  }
+
+  if (feature.manifest.patches?.length) {
+    for (const op of feature.manifest.patches) {
+      await applyPatchOp(targetDir, op, variables);
+    }
+  }
+
+  if (feature.manifest.gitignoreAppend?.length) {
+    const giPath = join(targetDir, '.gitignore');
+    const previous = existsSync(giPath) ? await fse.readFile(giPath, 'utf8') : '';
+    const existingLines = new Set(previous.split('\n').map(l => l.trimEnd()));
+    const lines = feature.manifest.gitignoreAppend.filter(line => !existingLines.has(line.trimEnd()));
+    if (lines.length > 0) {
+      const sep = previous.endsWith('\n') || previous.length === 0 ? '' : '\n';
+      const block = `\n# from feature: ${feature.name}\n${lines.join('\n')}\n`;
+      await fse.writeFile(giPath, `${previous}${sep}${block}`);
+    }
+  }
+
+  return written;
+}

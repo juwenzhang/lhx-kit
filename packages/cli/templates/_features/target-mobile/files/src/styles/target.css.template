@@ -1,0 +1,52 @@
+/*
+ * Target: Mobile — rem-adaptive H5 reset.
+ *
+ * Pair with `setupMobile({maxWidth: 750})` in src/bootstrap.* and
+ * `postcss-pxtorem` (rootValue: 75) — 1rem == clientWidth / 10.
+ * Write px values at 750px design-canvas scale; build rewrites to rem.
+ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft Yahei', sans-serif;
+  font-size: 28px;
+  line-height: 1.5;
+  color: #333;
+  background: #f7f7f7;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 600;
+  margin: 0 0 24px;
+}
+h2 {
+  font-size: 36px;
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+h3 {
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+p {
+  font-size: 28px;
+  margin: 0 0 16px;
+}
+
+a {
+  color: #1677ff;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 28px;
+}

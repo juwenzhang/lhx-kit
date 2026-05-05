@@ -1,0 +1,30 @@
+# @<%= packageName %>/core
+
+Primary library package of the **<%= appTitle %>** monorepo.
+
+## Install
+
+```bash
+pnpm add @<%= packageName %>/core
+```
+
+## Usage
+
+```ts
+import {Core} from '@<%= packageName %>/core';
+
+const core = new Core({greeting: 'Hi'});
+console.log(core.greet('World')); // Hi, World!
+```
+
+## Scripts
+
+```bash
+pnpm build       # build dist/ via <%= libBundlerName %>
+pnpm dev         # watch-rebuild
+pnpm typecheck   # tsc --noEmit
+```
+
+## Output formats
+
+`<%= libFormatsHumanList %>`. Configured in `<%= libBundlerName %>.config.*`.

@@ -1,6 +1,0 @@
-{
-  "scripts": {
-    "offline:build": "lhx-cli offline build --hybrid-type=prod",
-    "offline:inspect": "lhx-cli offline inspect dist-offline"
-  }
-}

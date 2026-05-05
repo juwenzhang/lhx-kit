@@ -1,0 +1,24 @@
+import {createPinia} from 'pinia';
+import {createApp, defineComponent, h} from 'vue';
+import {bootstrap} from '@/bootstrap';
+
+/**
+ * The `settings` entry does not need an in-page router. A single root
+ * component is enough. Add a router (mirroring src/pages/home/router.ts)
+ * if secondary navigation is needed later.
+ */
+const SettingsPage = defineComponent({
+  name: 'SettingsPage',
+  setup() {
+    return () =>
+      h('section', {class: 'page-settings'}, [
+        h('h1', 'examples/cli-smoke - Settings'),
+        h('p', 'This page is intentionally simple — no in-page router, no renderer.'),
+        h('p', 'Run `lhx-cli add page <name>` to scaffold more MPA entries.')
+      ]);
+  }
+});
+
+void bootstrap().then(() => {
+  createApp(SettingsPage).use(createPinia()).mount('#app');
+});

@@ -7,7 +7,7 @@ import {createRequest} from '@lhx-kit/runtime/request';
  * - Retries transient network errors once.
  * - Deduplicates identical in-flight requests.
  */
-export const http = createRequest({
+export const http: ReturnType<typeof createRequest> = createRequest({
   baseURL: import.meta.env.LHX_API_BASE,
   timeout: 10000,
   dedupe: true,

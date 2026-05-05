@@ -1,0 +1,14 @@
+{
+  "name": "css-pre-less",
+  "title": "CSS preprocessor: Less",
+  "description": "Adds Less as the CSS preprocessor (CN-ecosystem mainstream).",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-preprocessor",
+  "isDefault": true,
+  "priority": 200,
+  "packageOverlay": {
+    "devDependencies": {
+      "less": "^4.2.0"
+    }
+  }
+}

@@ -1,7 +1,25 @@
 import {defineConfig} from 'vite';
 import {lhxKit} from '@lhx-kit/vite-plugin';
 import react from '@vitejs/plugin-react';
+// lhx:vite-imports
 
 export default defineConfig({
-  plugins: [lhxKit(), react()]
+  plugins: [
+    lhxKit(),
+    react()
+    // lhx:vite-plugins
+  ],
+  css: {
+    postcss: {
+      plugins: [
+        // lhx:postcss-plugins
+      ]
+    }
+    // lhx:css-options
+  },
+  resolve: {
+    alias: {
+      // lhx:resolve-alias
+    }
+  }
 });

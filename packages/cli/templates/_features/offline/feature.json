@@ -1,0 +1,17 @@
+{
+  "name": "offline",
+  "title": "Offline packaging",
+  "description": "Hybrid (WebView) offline packaging — adds offline.config.ts plus `offline:build` / `offline:inspect` npm scripts. Opt-in only; never auto-enabled by target.",
+  "appliesTo": ["react-mpa", "vue3-mpa", "react-h5-hybrid", "vue3-h5-hybrid"],
+  "mutexGroup": null,
+  "isDefault": false,
+  "priority": 600,
+  "files": ["files"],
+  "packageOverlay": {
+    "scripts": {
+      "offline:build": "lhx-cli offline build --hybrid-type=prod",
+      "offline:inspect": "lhx-cli offline inspect dist-offline"
+    }
+  },
+  "gitignoreAppend": ["dist-offline", "*.zip"]
+}

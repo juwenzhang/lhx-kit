@@ -1,0 +1,36 @@
+{
+  "name": "css-atomic-unocss",
+  "title": "CSS atomic: UnoCSS",
+  "description": "Adds UnoCSS as the atomic-CSS engine. Fast, presets-driven, vite plugin.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-atomic",
+  "isDefault": true,
+  "priority": 300,
+  "requireAnchors": [
+    {"file": "vite.config.ts", "anchor": "// lhx:vite-imports"},
+    {"file": "vite.config.ts", "anchor": "// lhx:vite-plugins"}
+  ],
+  "files": ["files"],
+  "patches": [
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:vite-imports",
+      "content": "import unocss from 'unocss/vite';"
+    },
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:vite-plugins",
+      "content": "    , unocss()"
+    }
+  ],
+  "packageOverlay": {
+    "devDependencies": {
+      "unocss": "^0.65.0",
+      "@unocss/preset-uno": "^0.65.0",
+      "@unocss/preset-attributify": "^0.65.0",
+      "@unocss/preset-icons": "^0.65.0"
+    }
+  }
+}

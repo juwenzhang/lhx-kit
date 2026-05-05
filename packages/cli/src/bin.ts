@@ -24,10 +24,18 @@ export async function main(): Promise<void> {
     .command('create [name]', 'Scaffold a new project from a built-in or remote template')
     .option('-t, --template <template>', 'Built-in name, local path, or giget source (gh:user/repo#ref)')
     .option('--features <list>', 'Comma-separated feature names')
+    .option('--target <mode>', 'Frontend deploy target: pc | mobile | hybrid (default hybrid)')
+    .option('--css-preprocessor <pre>', 'CSS preprocessor: less (default) | sass | none')
+    .option('--css-atomic <atomic>', 'CSS atomic system: unocss (default) | tailwind | none')
+    .option(
+      '--css-styling <styling>',
+      'CSS styling: modules (default) | emotion | styled | vanilla-extract | vue-scoped | none'
+    )
     .option('--title <title>', 'Human-readable project title')
     .option('--yes', 'Non-interactive mode (skip prompts)')
     .option('--force', 'Overwrite target directory if it is not empty')
     .option('--link-workspace', 'Rewrite @lhx-kit/* deps to workspace:* (in-monorepo scaffolding)')
+    .option('--lhx-version <strategy>', '@lhx-kit/* version: auto (npm view, default) | local | <range>')
     .option('--skip-install', 'Skip automatic dependency installation')
     .option('--skip-git', 'Skip automatic git init')
     .option('--package-manager <pm>', 'Package manager for install (pnpm|npm|yarn)', {default: 'pnpm'})

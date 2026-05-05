@@ -1,0 +1,33 @@
+{
+  "name": "css-atomic-tailwind",
+  "title": "CSS atomic: Tailwind CSS",
+  "description": "Adds Tailwind CSS via PostCSS. Industry-standard utility framework.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-atomic",
+  "isDefault": false,
+  "priority": 300,
+  "requireAnchors": [
+    {"file": "vite.config.ts", "anchor": "// lhx:postcss-plugins"}
+  ],
+  "files": ["files"],
+  "patches": [
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:vite-imports",
+      "content": "import tailwindcss from 'tailwindcss';\nimport autoprefixer from 'autoprefixer';"
+    },
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:postcss-plugins",
+      "content": "        tailwindcss(),\n        autoprefixer()"
+    }
+  ],
+  "packageOverlay": {
+    "devDependencies": {
+      "tailwindcss": "^3.4.17",
+      "autoprefixer": "^10.4.20"
+    }
+  }
+}

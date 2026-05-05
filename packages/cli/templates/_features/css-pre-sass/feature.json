@@ -1,0 +1,14 @@
+{
+  "name": "css-pre-sass",
+  "title": "CSS preprocessor: Sass",
+  "description": "Adds Sass / SCSS as the CSS preprocessor.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-preprocessor",
+  "isDefault": false,
+  "priority": 200,
+  "packageOverlay": {
+    "devDependencies": {
+      "sass": "^1.83.0"
+    }
+  }
+}

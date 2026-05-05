@@ -1,0 +1,39 @@
+/*
+ * Target: Hybrid — responsive PC + mobile.
+ *
+ * Mobile rendering uses rem (paired with setupMobile + postcss-pxtorem).
+ * Desktop uses a max-width container so the layout stays "phone-emulator"
+ * on wide screens. Adjust the breakpoint to suit your design canvas.
+ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft Yahei', sans-serif;
+  font-size: 28px;
+  line-height: 1.5;
+  color: #333;
+  background: #f7f7f7;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 { font-size: 48px; font-weight: 600; margin: 0 0 24px; }
+h2 { font-size: 36px; font-weight: 600; margin: 0 0 20px; }
+h3 { font-size: 32px; font-weight: 600; margin: 0 0 16px; }
+p  { font-size: 28px; margin: 0 0 16px; }
+
+a { color: #1677ff; text-decoration: none; }
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 28px;
+}
+
+@media (min-width: 768px) {
+  body {
+    max-width: 750px;
+    margin-inline: auto;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  }
+}

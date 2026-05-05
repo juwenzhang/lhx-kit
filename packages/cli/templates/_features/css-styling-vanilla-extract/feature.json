@@ -1,0 +1,33 @@
+{
+  "name": "css-styling-vanilla-extract",
+  "title": "CSS styling: Vanilla Extract",
+  "description": "Zero-runtime CSS-in-TS. Type-safe, builds to static CSS.",
+  "appliesTo": ["vue3-mpa", "react-mpa"],
+  "mutexGroup": "css-styling",
+  "isDefault": false,
+  "priority": 400,
+  "requireAnchors": [
+    {"file": "vite.config.ts", "anchor": "// lhx:vite-imports"},
+    {"file": "vite.config.ts", "anchor": "// lhx:vite-plugins"}
+  ],
+  "patches": [
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:vite-imports",
+      "content": "import {vanillaExtractPlugin} from '@vanilla-extract/vite-plugin';"
+    },
+    {
+      "op": "insert-after",
+      "file": "vite.config.ts",
+      "anchor": "// lhx:vite-plugins",
+      "content": "    , vanillaExtractPlugin()"
+    }
+  ],
+  "packageOverlay": {
+    "devDependencies": {
+      "@vanilla-extract/css": "^1.16.1",
+      "@vanilla-extract/vite-plugin": "^4.0.20"
+    }
+  }
+}
