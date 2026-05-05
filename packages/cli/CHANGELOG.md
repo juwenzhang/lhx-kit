@@ -1,5 +1,102 @@
 # @lhx-kit/cli
 
+## 1.1.0
+
+### Minor Changes
+
+- [`1577f89`](https://github.com/juwenzhang/lhx-kit/commit/1577f8927b2ff5fbad77e029fceba97bbcc8912d) Thanks [@juwenzhang](https://github.com/juwenzhang)! - feat(cli): add pm2, db-migrate features + business-mono template using lhx-kit MPA architecture
+
+  ### New features
+  - **pm2** — PM2 cluster-mode process manager feature. Adds `ecosystem.config.cjs` with `instances: 'max'`, log files, memory limit. Applies to all 6 service/micro templates and node-ts. Scripts: `start:pm2`, `stop:pm2`, `reload:pm2`, `logs:pm2`.
+  - **db-migrate** — Lightweight SQL migration runner using raw `pg`. Adds `src/scripts/migrate.ts` and `migrations/0001_initial.sql` with `-- migrate:up` / `-- migrate:down` blocks. Tracks applied migrations in `_migrations` table. Scripts: `db:migrate`, `db:rollback`, `db:status`.
+
+  ### business-mono redesign
+  - **`apps/web` now uses the lhx-kit MPA architecture** (mirrors react-mpa) instead of a bare Vite SPA:
+    - `project.config.ts` with `lhx-cli` scripts, `/api` proxy to Express port 3000, pages/aliases config
+    - `vite.config.ts` uses `lhxKit()` + `@vitejs/plugin-react`
+    - `template.html` (lhx-kit MPA HTML template)
+    - `src/bootstrap.ts`, `src/env.d.ts`, MSW mocks, Zustand user store
+    - `src/pages/home/` MPA page with entry.tsx, router.tsx, HomeLanding.tsx
+    - `src/services/http.ts` (`createRequest` from `@lhx-kit/runtime`)
+    - `src/services/example.ts` uses `ApiResponse<T>` from `@<%= packageName %>/types`
+    - Offline support commented-in via `project.config.ts` (uncomment + add feature to enable)
+
+  ### Smoke tests in examples/
+
+  All new templates verified in `examples/`:
+  - `express-svc-smoke`, `koa-svc-smoke`, `fastify-svc-smoke` — service templates with db-pg + cache-redis
+  - `express-micro-smoke`, `koa-micro-smoke`, `fastify-micro-smoke` — micro templates with db-pg
+  - `node-ts-smoke` — plain Node.js TypeScript template
+  - `business-smoke` — full-stack monorepo with lhx-kit MPA web
+
+- [`1577f89`](https://github.com/juwenzhang/lhx-kit/commit/1577f8927b2ff5fbad77e029fceba97bbcc8912d) Thanks [@juwenzhang](https://github.com/juwenzhang)! - feat(templates): add nodemon auto-restart to all backend templates
+
+  All backend templates (express-service, koa-service, fastify-service,
+  express-micro, koa-micro, fastify-micro, node-ts) now ship with:
+  - `nodemon.json` — watches `src/`, restarts via `tsx --env-file=.env`
+  - `nodemon.worker.json` (micro templates only) — same for the worker process
+  - `dev` script changed from `tsx watch` to `nodemon`
+  - `dev:worker` script (micro) changed to `nodemon --config nodemon.worker.json`
+  - `nodemon ^3.1.0` added to devDependencies
+
+- [`1577f89`](https://github.com/juwenzhang/lhx-kit/commit/1577f8927b2ff5fbad77e029fceba97bbcc8912d) Thanks [@juwenzhang](https://github.com/juwenzhang)! - feat(cli): add koa-service, fastify-service, and 3 microservice templates (express/koa/fastify-micro)
+
+  ### New templates
+  - **koa-service** — Koa 2 + TypeScript service with pino logger, zod env, multistage Dockerfile, graceful shutdown; supports `db-pg | db-mysql | db-none` and `cache-redis | cache-none` feature axes
+  - **fastify-service** — Fastify 5 + TypeScript service with built-in pino, zod env, same feature axes as koa-service
+  - **express-micro** — Express 4 microservice: Redis (ioredis + BullMQ) built-in, `/livez` + `/readyz` health endpoints, BullMQ worker (`src/worker.ts`), k8s Deployment + Service YAML, db feature axis
+  - **koa-micro** — Koa 2 microservice with the same micro stack
+  - **fastify-micro** — Fastify 5 microservice with the same micro stack
+
+  ### Microservice design decisions
+  - **Redis is built-in** for all `*-micro` templates (required by BullMQ); `cache-redis` feature is not applied — REDIS_URL is in the base env schema
+  - **`src/db.ts` stub** — present in every micro template; overwritten by `db-pg` or `db-mysql` feature at scaffold time so readiness checks (`/readyz`) always compile cleanly regardless of db selection
+  - **BullMQ worker** — `src/worker.ts` is a separate binary; `pnpm dev:worker` and `pnpm start:worker` scripts included
+  - **k8s manifests** — `k8s/deployment.yaml` wires liveness (`/livez`) and readiness (`/readyz`) probes; `k8s/service.yaml` exposes ClusterIP port 80
+
+  ### Feature updates
+  - `db-pg`, `db-mysql`, `db-none` `appliesTo` extended to include all 3 micro variants
+
+  ### create + wizard
+  - **Backend auto-injection** — when no db/cache feature is passed, `db-pg` (and `cache-redis` for non-micro) are injected automatically; preserves explicit `--features` flag
+  - **Backend wizard branch** — interactive mode now prompts for Database (pg/mysql/none) and Cache (redis/none, skipped for micro); summary panel reflects selections
+
+- [`1577f89`](https://github.com/juwenzhang/lhx-kit/commit/1577f8927b2ff5fbad77e029fceba97bbcc8912d) Thanks [@juwenzhang](https://github.com/juwenzhang)! - Phase 1 of `expand-cli-template-ecosystem`: shared layer + Biome migration + target/CSS features + interactive wizard + post-scaffold handoff + dynamic version resolution.
+  - **`templates/_shared/`** — cross-template baseline. Carries `biome.json`, `.editorconfig`, `.npmrc`, `.nvmrc`, `.dockerignore`, `commitlint.config.cjs`, `lint-staged.config.cjs` (now using `biome check --write`), and `.husky/{commit-msg,pre-commit,pre-push}`. Templates opt in via `"extends": "_shared"` in their `template.json`.
+  - **`templates/_features/`** — cross-template feature catalog. Phase 1 ships:
+    - `target-pc` / `target-mobile` / `target-hybrid` (mutex group `target`, default `hybrid`). Hybrid auto-includes the `offline` feature.
+    - `css-pre-{less,sass,none}` (mutex `css-preprocessor`, default `less`)
+    - `css-atomic-{unocss,tailwind,none}` (mutex `css-atomic`, default `unocss`)
+    - `css-styling-{modules,emotion,styled,vanilla-extract,vue-scoped,none}` (mutex `css-styling`, default `modules`; React-only and Vue-only members hard-validated)
+    - `codebuddy-skills` (opt-in openspec/+.codebuddy/ scaffold)
+  - **Schemas** (`src/schema.ts`): zod-validated `FeatureManifest` and `PatchOp` (insert-after / insert-before / replace / append / prepend / merge-imports).
+  - **Anchor-based source-edit** primitives in `src/templates.ts`. Hard-fails when a feature points at a missing anchor.
+  - **Biome-only stack** — `vue3-mpa` and `react-mpa` no longer ship `eslint.config.js`, `.prettierrc.json`, or any eslint/prettier devDeps. `lint-staged` calls `biome check --write` on every file pattern.
+  - **Interactive wizard** (`src/wizard.ts`, uses `@clack/prompts`) — runs whenever `--yes` is absent and any of project name / template / features is missing. Mixed-mode skips supplied steps. Branches by template type, narrows compatibility-incompatible options, supports type-to-filter on long lists, shows a summary before writing.
+  - **Post-scaffold handoff** (`src/post-scaffold.ts`) — bilingual zh+en footer printed after every successful scaffold. Hardcoded URLs (`https://juwenzhang.github.io/lhx-kit/index.html` + `https://github.com/juwenzhang/lhx-kit/issues`). No telemetry, no version-check ping.
+  - **Dynamic version resolution** (`src/version-resolver.ts`) — by default, `npm view <pkg> version` is run for each `@lhx-kit/*` dep so generated projects pick up the latest published version of every kit package. Falls back gracefully to the local CLI version when offline. Override with `--lhx-version=local` (skip network) or an explicit range like `--lhx-version=^1.2.0`.
+  - **New flags**: `--target`, `--css-preprocessor`, `--css-atomic`, `--css-styling`, `--lhx-version`. Inconsistent flag-vs-feature combinations exit 2 with a "did you mean" hint.
+
+  **Breaking changes for projects scaffolded via the old CLI**: existing scaffolded projects are NOT auto-migrated. The next `lhx-cli create` produces output with `biome.json` instead of `eslint.config.js` + `.prettierrc.json`, the `_shared/` baseline, and the new feature pipeline. Existing user code is unaffected.
+
+- [`1577f89`](https://github.com/juwenzhang/lhx-kit/commit/1577f8927b2ff5fbad77e029fceba97bbcc8912d) Thanks [@juwenzhang](https://github.com/juwenzhang)! - feat(cli): lib monorepo per-package README, workspaceOverlay for bundler devDeps, node-ts template, lib wizard branch
+  - **schema + templates**: add `workspaceOverlay` to feature manifests — always applied to the workspace root; distinguishes between per-package scripts (`packageOverlay`) and workspace-level devDependencies (`workspaceOverlay`) in monorepo templates
+  - **bundler features** (tsup / rslib / rollup): move all `devDependencies` from `packageOverlay` into `workspaceOverlay` so monorepo member packages no longer carry redundant build-tool deps; scripts (`build`, `dev`) remain in `packageOverlay` and are expanded per-package via `monorepoExpand`
+  - **lib-monorepo**: add `packages/core/README.md` and `packages/utils/README.md` templates (both packages listed `README.md` in `"files"` but the file was never scaffolded)
+  - **node-ts template**: new `node-ts` template — minimal Node.js + TypeScript service without a web framework (pino logger, zod env, tsx dev, tsc prod build, multistage Dockerfile, graceful shutdown)
+  - **wizard**: add library wizard branch — when the chosen template is a library (`lib-single` / `lib-monorepo`), the wizard now prompts for bundler (tsup / rslib / rollup) and output formats (ESM / CJS / UMD) rather than silently auto-injecting defaults; the summary panel reflects the selections
+
+### Patch Changes
+
+- [`6e27cd2`](https://github.com/juwenzhang/lhx-kit/commit/6e27cd2a3eec2a6b0a9825faab03c46b0c13f3f3) Thanks [@juwenzhang](https://github.com/juwenzhang)! - Type-safety + lint hygiene sweep — no public API changes:
+  - Removed every `any` / `as any` from `packages/*` source. Replaced with `unknown` + typed shape (`viteExports` rolldown probe) and `unknown` → restrictive cast (`UserConfig['build']['rollupOptions']`, `Record<string, unknown>`) for Vite 8 surface that isn't in Vite 5/6/7 typings.
+  - Cleared all 33 Biome warnings: `noNonNullAssertion` (replaced `!` with explicit narrowing), `noAssignInExpressions` (extracted regex `.exec` into separate statements), `useTemplate` (string concat → template literals), `useOptionalChain`, `useConsistentArrayType`, unused imports/parameters.
+  - Switched `.changeset/config.json` from `fixed` to `linked`: package versions stay aligned, but unchanged packages no longer get re-published with empty changelogs every release.
+
+- Updated dependencies [[`6e27cd2`](https://github.com/juwenzhang/lhx-kit/commit/6e27cd2a3eec2a6b0a9825faab03c46b0c13f3f3)]:
+  - @lhx-kit/config@1.1.0
+  - @lhx-kit/offline@1.1.0
+
 ## 1.0.1
 
 ### Patch Changes
