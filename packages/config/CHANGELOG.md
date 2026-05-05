@@ -1,5 +1,14 @@
 # @lhx-kit/config
 
+## 1.1.0
+
+### Patch Changes
+
+- [`6e27cd2`](https://github.com/juwenzhang/lhx-kit/commit/6e27cd2a3eec2a6b0a9825faab03c46b0c13f3f3) Thanks [@juwenzhang](https://github.com/juwenzhang)! - Type-safety + lint hygiene sweep — no public API changes:
+  - Removed every `any` / `as any` from `packages/*` source. Replaced with `unknown` + typed shape (`viteExports` rolldown probe) and `unknown` → restrictive cast (`UserConfig['build']['rollupOptions']`, `Record<string, unknown>`) for Vite 8 surface that isn't in Vite 5/6/7 typings.
+  - Cleared all 33 Biome warnings: `noNonNullAssertion` (replaced `!` with explicit narrowing), `noAssignInExpressions` (extracted regex `.exec` into separate statements), `useTemplate` (string concat → template literals), `useOptionalChain`, `useConsistentArrayType`, unused imports/parameters.
+  - Switched `.changeset/config.json` from `fixed` to `linked`: package versions stay aligned, but unchanged packages no longer get re-published with empty changelogs every release.
+
 ## 1.0.1
 
 ### Patch Changes

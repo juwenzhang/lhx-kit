@@ -1,6 +1,6 @@
 {
   "name": "examples-cli-smoke",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "examples/cli-smoke - multi-page Vue 3 application powered by lhx-kit.",
   "type": "module",
