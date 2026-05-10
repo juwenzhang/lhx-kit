@@ -41,6 +41,7 @@
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@eslint/js": "^10.0.1",
+    "@lhx-kit/cli": "workspace:^",
     "@lhx-kit/config": "workspace:*",
     "@lhx-kit/tsconfig": "workspace:*",
     "@lhx-kit/vite-plugin": "workspace:*",

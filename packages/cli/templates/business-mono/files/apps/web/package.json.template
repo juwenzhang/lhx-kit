@@ -27,6 +27,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@lhx-kit/cli": "<%= lhxKitVersionRange %>",
     "@lhx-kit/config": "<%= lhxKitVersionRange %>",
     "@lhx-kit/tsconfig": "<%= lhxKitVersionRange %>",
     "@lhx-kit/vite-plugin": "<%= lhxKitVersionRange %>",
