@@ -1,0 +1,23 @@
+import type {ReactElement} from 'react';
+import {lazy, Suspense} from 'react';
+import {HashRouter, Route, Routes} from 'react-router-dom';
+
+const <%= Name %>Landing = lazy(() => import('./views/<%= Name %>Landing'));
+const <%= Name %>About = lazy(() => import('./views/<%= Name %>About'));
+
+/**
+ * Router scoped to the "<%= name %>" MPA page. HashRouter keeps this page
+ * self-contained — no server-side URL rewrites required.
+ */
+export function <%= Name %>Router(): ReactElement {
+  return (
+    <HashRouter>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<<%= Name %>Landing />} />
+          <Route path="/about" element={<<%= Name %>About />} />
+        </Routes>
+      </Suspense>
+    </HashRouter>
+  );
+}

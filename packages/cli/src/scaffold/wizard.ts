@@ -1,5 +1,5 @@
 import * as p from '@clack/prompts';
-import type {TargetMode} from './commands/create';
+import type {TargetMode} from '../commands/create';
 import type {TemplateManifest} from './templates';
 
 /**

@@ -1,0 +1,11 @@
+import {create} from 'zustand';
+
+interface <%= Name %>State {
+  value: number;
+  set(value: number): void;
+}
+
+export const use<%= Name %>Store = create<<%= Name %>State>((setState) => ({
+  value: 0,
+  set: (value) => setState({value})
+}));

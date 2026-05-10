@@ -1,0 +1,10 @@
+import type {ReactElement, ReactNode} from 'react';
+
+interface <%= Name %>Props {
+  title?: string;
+  children?: ReactNode;
+}
+
+export function <%= Name %>({title, children}: <%= Name %>Props): ReactElement {
+  return <div className="lhx-<%= name %>">{children ?? title}</div>;
+}

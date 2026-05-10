@@ -1,0 +1,27 @@
+# <%= fullName %>
+
+> <%= description %>
+
+## 安装
+
+```bash
+npm install <%= fullName %>
+# 或
+pnpm add <%= fullName %>
+```
+
+## 用法
+
+```ts
+import {hello<%= Name %>} from '<%= fullName %>';
+
+console.log(hello<%= Name %>('读者'));
+```
+
+## 文档
+
+完整的 lhx-kit 文档：<https://juwenzhang.github.io/lhx-kit/>
+
+## License
+
+[MIT](./LICENSE) © luhanxin

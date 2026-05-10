@@ -1,0 +1,11 @@
+import {defineStore} from 'pinia';
+
+export const use<%= Name %>Store = defineStore('<%= camelName %>', {
+  state: () => ({
+    // TODO: replace with real state
+    value: 0 as number
+  }),
+  actions: {
+    set(value: number) { this.value = value; }
+  }
+});

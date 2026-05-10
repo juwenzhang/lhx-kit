@@ -1,160 +1,45 @@
 import {cac} from 'cac';
 import {bold, cyan, dim} from 'kolorist';
-import {type AddKind, runAddCommand} from './commands/add';
-import {runCreateCommand} from './commands/create';
-import {runBuildCommand, runDevCommand, runPreviewCommand} from './commands/dev-build';
-import {runDoctorCommand} from './commands/doctor';
-import {runInfoCommand} from './commands/info';
-import {runOfflineBuild, runOfflineDiff, runOfflineInspect, runOfflineManifest} from './commands/offline';
-import {runSkillsCommand} from './commands/skills';
-import {runUpgradeCommand} from './commands/upgrade';
-import {createContext} from './context';
-import {error} from './ui';
+import {addCommand} from './commands/add';
+import {createCommand} from './commands/create';
+import {buildCommand, devCommand, previewCommand} from './commands/dev-build';
+import {doctorCommand} from './commands/doctor';
+import {infoCommand} from './commands/info';
+import {offlineCommand} from './commands/offline';
+import {skillsCommand} from './commands/skills';
+import {upgradeCommand} from './commands/upgrade';
+import {type CommandDescriptor, registerCommands} from './core/command';
+import {createContext} from './core/context';
+import {error} from './utils/ui';
+
+/**
+ * Master command list. Each entry owns its own CLI surface (name + options +
+ * action) inside its respective `commands/*.ts` file; this array exists only
+ * to fix the order in which they appear under `--help` and to give
+ * `registerCommands` something to iterate.
+ */
+const COMMANDS: readonly CommandDescriptor[] = [
+  createCommand,
+  addCommand,
+  devCommand,
+  buildCommand,
+  previewCommand,
+  infoCommand,
+  doctorCommand,
+  offlineCommand,
+  upgradeCommand,
+  skillsCommand
+];
 
 export async function main(): Promise<void> {
   const cli = cac('lhx-cli');
   const context = createContext();
-  // Version comes from `context.cliPackage.version`, which reads
-  // `@lhx-kit/cli/package.json` at startup. Keeping a single source of
-  // truth means bumping `package.json#version` is the ONLY place you edit
-  // to release — no stale hard-coded constants, no drift.
+  // Single source of truth for the program version: `@lhx-kit/cli/package.json`,
+  // read once at startup. Bumping the published version is therefore the only
+  // place you edit to release — no stale hard-coded constants, no drift.
   const PROGRAM_VERSION = context.cliPackage.version;
 
-  cli
-    .command('create [name]', 'Scaffold a new project from a built-in or remote template')
-    .option('-t, --template <template>', 'Built-in name, local path, or giget source (gh:user/repo#ref)')
-    .option('--features <list>', 'Comma-separated feature names')
-    .option('--target <mode>', 'Frontend deploy target: pc | mobile | hybrid (default hybrid)')
-    .option('--css-preprocessor <pre>', 'CSS preprocessor: less (default) | sass | none')
-    .option('--css-atomic <atomic>', 'CSS atomic system: unocss (default) | tailwind | none')
-    .option(
-      '--css-styling <styling>',
-      'CSS styling: modules (default) | emotion | styled | vanilla-extract | vue-scoped | none'
-    )
-    .option('--title <title>', 'Human-readable project title')
-    .option('--yes', 'Non-interactive mode (skip prompts)')
-    .option('--force', 'Overwrite target directory if it is not empty')
-    .option('--link-workspace', 'Rewrite @lhx-kit/* deps to workspace:* (in-monorepo scaffolding)')
-    .option('--lhx-version <strategy>', '@lhx-kit/* version: auto (npm view, default) | local | <range>')
-    .option('--skip-install', 'Skip automatic dependency installation')
-    .option('--skip-git', 'Skip automatic git init')
-    .option('--package-manager <pm>', 'Package manager for install (pnpm|npm|yarn)', {default: 'pnpm'})
-    .action((name: string | undefined, options: Record<string, unknown>) =>
-      runCreateCommand(context, name, options as never)
-    );
-
-  cli
-    .command('add [kind] [name]', 'Generate a page / component / api / service / store / schema / module / package')
-    .option('--title <title>', 'For `add page`: display title')
-    .option('--offline', 'For `add page`: mark the page offline and add to offline.whitelistPages')
-    .option('--description <text>', 'For `add package`: short description written into package.json')
-    .option('--force', 'For `add package`: overwrite target directory if it already exists')
-    .option('--yes', 'Non-interactive mode (require all arguments to be provided)')
-    .action((kind: AddKind | undefined, name: string | undefined, options: Record<string, unknown>) =>
-      runAddCommand(context, kind, name, options as never)
-    );
-
-  cli
-    .command('dev', 'Run the project dev server (multi-page aware)')
-    .option('--page <name>', 'Page to run (alias of --pages for a single name)')
-    .option('--pages <list>', 'Comma-separated list of pages to include')
-    .option('--host [host]', 'Specify hostname (forwarded to vite)')
-    .option('--port <port>', 'Specify port (forwarded to vite)')
-    .option('--strictPort', 'Exit if port is already in use (forwarded to vite)')
-    .option('--open [path]', 'Open browser on startup (forwarded to vite)')
-    .option('--base <path>', 'Public base path (forwarded to vite)')
-    .action((options: Record<string, unknown>) => runDevCommand(context, options as never));
-
-  cli
-    .command('build', 'Build the project (multi-page aware)')
-    .option('--page <name>', 'Page to build (alias of --pages for a single name)')
-    .option('--pages <list>', 'Comma-separated list of pages to include')
-    .action((options: {page?: string; pages?: string}) => runBuildCommand(context, options));
-
-  cli
-    .command('preview', 'Preview the built project')
-    .option('--page <name>', 'Page to preview')
-    .option('--pages <list>', 'Comma-separated list of pages to include')
-    .option('--host [host]', 'Specify hostname (forwarded to vite)')
-    .option('--port <port>', 'Specify port (forwarded to vite)')
-    .option('--strictPort', 'Exit if port is already in use (forwarded to vite)')
-    .option('--open [path]', 'Open browser on startup (forwarded to vite)')
-    .option('--base <path>', 'Public base path (forwarded to vite)')
-    .action((options: Record<string, unknown>) => runPreviewCommand(context, options as never));
-
-  cli.command('info', 'Show current project info').action(() => runInfoCommand(context));
-
-  cli.command('doctor', 'Diagnose environment and project configuration').action(() => runDoctorCommand(context));
-
-  cli
-    .command('offline [action] [target]', 'Offline packaging: build | manifest | inspect | diff')
-    .option('--build-dir <dir>', 'Override build directory')
-    .option('--out-dir <dir>', 'Override offline output directory')
-    .option('--no-zip', 'Skip zip generation for offline build')
-    .option('--skip-build', 'Skip automatic pnpm build when running offline build')
-    .option('--hybrid-type <type>', 'Which version track to package (test | prod)')
-    .option('--yes', 'Non-interactive mode')
-    .action(async (action: string | undefined, target: string | undefined, options: Record<string, unknown>) => {
-      let resolvedAction = action;
-      if (!resolvedAction) {
-        if (options.yes || !(process.stdin.isTTY && process.stdout.isTTY)) {
-          printOfflineHelp();
-          return;
-        }
-        const picked = await (await import('prompts')).default(
-          {
-            type: 'select',
-            name: 'action',
-            message: 'Pick an offline action',
-            choices: [
-              {
-                title: 'build',
-                description: 'Run project build and package dist-offline + manifest + zip',
-                value: 'build'
-              },
-              {title: 'manifest', description: 'Generate only manifest.json from dist', value: 'manifest'},
-              {title: 'inspect', description: 'Inspect a dist-offline directory or zip file', value: 'inspect'},
-              {title: 'diff', description: 'Reserved: incremental package output', value: 'diff'}
-            ]
-          },
-          {onCancel: () => process.exit(130)}
-        );
-        resolvedAction = picked.action as string | undefined;
-        if (!resolvedAction) return;
-      }
-      switch (resolvedAction) {
-        case 'build':
-          await runOfflineBuild(context, options as never);
-          return;
-        case 'manifest':
-          await runOfflineManifest(context, options as never);
-          return;
-        case 'inspect':
-          await runOfflineInspect(context, target);
-          return;
-        case 'diff':
-          await runOfflineDiff();
-          return;
-        default:
-          printOfflineHelp();
-      }
-    });
-
-  cli
-    .command('upgrade', 'Upgrade project to the latest runtime / template versions (placeholder)')
-    .action(() => runUpgradeCommand());
-
-  cli
-    .command('skills [action] [...names]', 'Manage agent-agnostic skills: list | add | sync')
-    .option('--targets <list>', 'Comma-separated targets: codebuddy,cursor,claude,plain', {default: ''})
-    .option('--all', 'Select every bundled skill')
-    .option('--force', 'Overwrite existing files on disk')
-    .option('--yes', 'Non-interactive mode (defaults: list / all skills / plain target)')
-    .action((action: string | undefined, names: string[] | undefined, options: Record<string, unknown>) => {
-      const normalisedAction = (action as 'list' | 'add' | 'sync' | undefined) ?? undefined;
-      return runSkillsCommand(context, normalisedAction, names ?? [], options as never);
-    });
-
+  registerCommands(cli, context, COMMANDS);
   cli.help(sections => [...sections, {title: '', body: customHelpBody(PROGRAM_VERSION)}]);
   cli.version(PROGRAM_VERSION);
 
@@ -197,14 +82,6 @@ function customHelpBody(version: string): string {
   lines.push('  lhx-cli offline build --hybrid-type=prod');
   lines.push('  lhx-cli skills add configure-cdn --targets=cursor,codebuddy');
   return lines.join('\n');
-}
-
-function printOfflineHelp(): void {
-  console.log(`${bold('lhx-cli offline')}`);
-  console.log('  build      Build project and package dist-offline + manifest + zip');
-  console.log('  manifest   Generate only manifest.json from dist');
-  console.log('  inspect    Inspect dist-offline directory or zip file');
-  console.log('  diff       Reserved: incremental package output');
 }
 
 main();

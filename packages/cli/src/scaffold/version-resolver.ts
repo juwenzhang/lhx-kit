@@ -1,4 +1,5 @@
 import {execa} from 'execa';
+import {toCaretMinor} from '../utils/semver';
 
 /**
  * Strategy for resolving `@lhx-kit/*` dependency versions written into the
@@ -16,19 +17,6 @@ import {execa} from 'execa';
  *                  want to pin to a specific kit version intentionally.
  */
 export type VersionStrategy = 'auto' | 'local' | string;
-
-/**
- * Convert a SemVer string to its caret-minor range (mirrors `toCaretMinor`
- * in context.ts so users get consistent dep-pinning shape regardless of
- * whether the version was read locally or fetched from npm).
- */
-function toCaretMinor(version: string): string {
-  if (!version) return '^0.0.0';
-  if (/[-+]/.test(version)) return `^${version}`;
-  const match = version.match(/^(\d+)\.(\d+)\./);
-  if (!match) return `^${version}`;
-  return `^${match[1]}.${match[2]}.0`;
-}
 
 /**
  * Probe `npm view` for the latest published version of an arbitrary package.

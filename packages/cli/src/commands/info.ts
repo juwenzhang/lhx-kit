@@ -1,6 +1,7 @@
-import type {CliContext} from '../context';
-import {tryProject} from '../project';
-import {error, info, muted, section, warn} from '../ui';
+import type {CommandDescriptor} from '../core/command';
+import type {CliContext} from '../core/context';
+import {tryProject} from '../core/project';
+import {error, info, muted, section, warn} from '../utils/ui';
 
 export async function runInfoCommand(context: CliContext): Promise<void> {
   // Always print the CLI version banner first — sourced from the same
@@ -56,3 +57,9 @@ export async function runInfoCommand(context: CliContext): Promise<void> {
     }
   }
 }
+
+export const infoCommand: CommandDescriptor = {
+  name: 'info',
+  description: 'Show current project info',
+  run: context => runInfoCommand(context)
+};

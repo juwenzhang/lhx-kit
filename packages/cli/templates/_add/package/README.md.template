@@ -1,0 +1,27 @@
+# <%= fullName %>
+
+> <%= description %>
+
+## Install
+
+```bash
+npm install <%= fullName %>
+# or
+pnpm add <%= fullName %>
+```
+
+## Usage
+
+```ts
+import {hello<%= Name %>} from '<%= fullName %>';
+
+console.log(hello<%= Name %>('reader'));
+```
+
+## Docs
+
+See the full lhx-kit documentation: <https://juwenzhang.github.io/lhx-kit/>
+
+## License
+
+[MIT](./LICENSE) © luhanxin

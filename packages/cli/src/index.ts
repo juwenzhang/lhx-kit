@@ -5,5 +5,5 @@ export {runDoctorCommand} from './commands/doctor';
 export {runInfoCommand} from './commands/info';
 export {runOfflineBuild, runOfflineDiff, runOfflineInspect, runOfflineManifest} from './commands/offline';
 export {runUpgradeCommand} from './commands/upgrade';
-export * from './context';
-export * from './templates';
+export * from './core/context';
+export * from './scaffold/templates';

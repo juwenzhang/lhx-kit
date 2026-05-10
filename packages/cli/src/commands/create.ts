@@ -4,8 +4,9 @@ import {execa} from 'execa';
 import fse from 'fs-extra';
 import {bold} from 'kolorist';
 import prompts from 'prompts';
-import type {CliContext} from '../context';
-import {type PackageManager, printHandoff} from '../post-scaffold';
+import type {CommandDescriptor} from '../core/command';
+import type {CliContext} from '../core/context';
+import {type PackageManager, printHandoff} from '../scaffold/post-scaffold';
 import {
   applyFeature,
   copyTemplateDir,
@@ -16,15 +17,16 @@ import {
   resolveSharedDir,
   type TemplateManifest,
   type TemplateVariables
-} from '../templates';
-import {info, section, success, warn} from '../ui';
+} from '../scaffold/templates';
 import {
   DEFAULT_INTERNAL_PACKAGE_PREFIXES,
   resolveLhxKitDepsPerPackage,
   resolveLhxKitVersionRange,
   type VersionStrategy
-} from '../version-resolver';
-import {runWizard, type WizardAnswers} from '../wizard';
+} from '../scaffold/version-resolver';
+import {runWizard, type WizardAnswers} from '../scaffold/wizard';
+import {toKebab, toPascalGlobal} from '../utils/string';
+import {info, section, success, warn} from '../utils/ui';
 
 export type TargetMode = 'pc' | 'mobile' | 'hybrid';
 
@@ -103,28 +105,6 @@ function validateCssCompat(features: string[], manifest: TemplateManifest): void
   }
 }
 
-function toKebab(input: string): string {
-  return (
-    input
-      .replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
-      .replace(/[^a-z0-9-]+/gi, '-')
-      .replace(/^-+|-+$/g, '')
-      .toLowerCase() || 'app'
-  );
-}
-
-function toPascal(input: string): string {
-  const cleaned = input
-    .replace(/^@[^/]+\//, '')
-    .replace(/[^a-zA-Z0-9]+/g, ' ')
-    .trim();
-  if (!cleaned) return 'App';
-  return cleaned
-    .split(/\s+/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join('');
-}
-
 interface LibScaffoldVars {
   libBundlerName: string;
   libFormats: string;
@@ -157,7 +137,7 @@ function buildLibScaffoldVars(features: string[], packageName: string): LibScaff
 
   const libFormatsTsupLiteral = ordered.length === 0 ? "['esm']" : `[${ordered.map(f => `'${f}'`).join(', ')}]`;
 
-  const libUmdGlobalName = toPascal(packageName);
+  const libUmdGlobalName = toPascalGlobal(packageName);
 
   // Rollup outputs: one entry per format, with idiomatic file extensions.
   const rollupOutputs = ordered.map(f => {
@@ -542,3 +522,28 @@ async function rewriteInternalDepsToWorkspace(targetDir: string, prefixes: reado
   if (changed) await fse.writeJson(pkgPath, pkg, {spaces: 2});
   return changed;
 }
+
+export const createCommand: CommandDescriptor = {
+  name: 'create [name]',
+  description: 'Scaffold a new project from a built-in or remote template',
+  options: [
+    {flags: '-t, --template <template>', description: 'Built-in name, local path, or giget source (gh:user/repo#ref)'},
+    {flags: '--features <list>', description: 'Comma-separated feature names'},
+    {flags: '--target <mode>', description: 'Frontend deploy target: pc | mobile | hybrid (default hybrid)'},
+    {flags: '--css-preprocessor <pre>', description: 'CSS preprocessor: less (default) | sass | none'},
+    {flags: '--css-atomic <atomic>', description: 'CSS atomic system: unocss (default) | tailwind | none'},
+    {
+      flags: '--css-styling <styling>',
+      description: 'CSS styling: modules (default) | emotion | styled | vanilla-extract | vue-scoped | none'
+    },
+    {flags: '--title <title>', description: 'Human-readable project title'},
+    {flags: '--yes', description: 'Non-interactive mode (skip prompts)'},
+    {flags: '--force', description: 'Overwrite target directory if it is not empty'},
+    {flags: '--link-workspace', description: 'Rewrite @lhx-kit/* deps to workspace:* (in-monorepo scaffolding)'},
+    {flags: '--lhx-version <strategy>', description: '@lhx-kit/* version: auto (npm view, default) | local | <range>'},
+    {flags: '--skip-install', description: 'Skip automatic dependency installation'},
+    {flags: '--skip-git', description: 'Skip automatic git init'},
+    {flags: '--package-manager <pm>', description: 'Package manager for install (pnpm|npm|yarn)', default: 'pnpm'}
+  ],
+  run: (context, name, options) => runCreateCommand(context, name as string | undefined, options as CreateOptions)
+};

@@ -1,10 +1,11 @@
 import {existsSync, readdirSync, readFileSync, statSync} from 'node:fs';
 import {isAbsolute, join, resolve as resolvePath} from 'node:path';
 import {extractPlaceholders} from '@lhx-kit/config';
-import type {CliContext} from '../context';
-import {tryProject} from '../project';
-import {listBuiltinTemplates} from '../templates';
-import {error, info, muted, section, success, warn} from '../ui';
+import type {CommandDescriptor} from '../core/command';
+import type {CliContext} from '../core/context';
+import {tryProject} from '../core/project';
+import {listBuiltinTemplates} from '../scaffold/templates';
+import {error, info, muted, section, success, warn} from '../utils/ui';
 
 interface Check {
   name: string;
@@ -300,3 +301,9 @@ function report(checks: Check[]): void {
   const missingProject = checks.find(c => c.name === 'project config' && !c.ok && c.severity === 'warn');
   if (missingProject) info('Project-specific checks were skipped.');
 }
+
+export const doctorCommand: CommandDescriptor = {
+  name: 'doctor',
+  description: 'Diagnose environment and project configuration',
+  run: context => runDoctorCommand(context)
+};

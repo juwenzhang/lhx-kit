@@ -2,7 +2,7 @@ import {existsSync} from 'node:fs';
 import {basename, join} from 'node:path';
 import fse from 'fs-extra';
 import {downloadTemplate} from 'giget';
-import {FeatureManifestSchema, type FeatureManifestZ, type PatchOp} from './schema';
+import {FeatureManifestSchema, type FeatureManifestZ, type PatchOp} from '../core/schema';
 
 export interface TemplateManifest {
   name: string;
@@ -82,21 +82,32 @@ export interface TemplateVariables {
   libFormatsRslibLiteral: string;
   /** UMD global name derived from `packageName` (PascalCase). */
   libUmdGlobalName: string;
+  /**
+   * Index signature so this type is assignable to `Record<string, unknown>`
+   * without a cast, which is what `renderString` / `copyTemplateDir` /
+   * `applyFeature` accept (the `add` command also feeds those helpers a
+   * plain record of per-invocation vars).
+   */
+  [key: string]: unknown;
 }
 
 /**
  * Minimal token engine: replaces `<%= name %>` with variables[name].
  * Also supports `<%= appTitle %>`, `<%= projectName %>`, etc.
  * Chosen over handlebars to avoid conflicts with JSX `{{...}}`.
+ *
+ * Accepts any record shape so the same engine drives both `create`-time
+ * project variables (`TemplateVariables`) and `add`-time per-invocation
+ * variables (page name, component name, …).
  */
-function renderString(input: string, variables: TemplateVariables): string {
+function renderString(input: string, variables: Record<string, unknown>): string {
   return input.replace(/<%=\s*([a-zA-Z0-9_]+)\s*%>/g, (_, key: string) => {
-    const value = (variables as unknown as Record<string, unknown>)[key];
+    const value = variables[key];
     return value === undefined ? '' : String(value);
   });
 }
 
-function renderPath(input: string, variables: TemplateVariables): string {
+function renderPath(input: string, variables: Record<string, unknown>): string {
   const rendered = renderString(input, variables);
   return rendered.endsWith('.template') ? rendered.slice(0, -'.template'.length) : rendered;
 }
@@ -107,9 +118,9 @@ export async function listBuiltinTemplates(templatesDir: string): Promise<Templa
   const manifests: TemplateManifest[] = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    // Skip infrastructure dirs: `_shared/` (the cross-template baseline) and
-    // `_features/` (cross-template feature catalog) are not selectable
-    // top-level templates.
+    // Skip infrastructure dirs: `_shared/` (the cross-template baseline),
+    // `_features/` (cross-template feature catalog), and `_add/` (stubs for
+    // the `lhx-cli add` command) are not selectable top-level templates.
     if (entry.name.startsWith('_')) continue;
     const manifestPath = join(templatesDir, entry.name, 'template.json');
     if (!existsSync(manifestPath)) continue;
@@ -207,7 +218,7 @@ async function applyFile(
   sourceFile: string,
   relPath: string,
   targetDir: string,
-  variables: TemplateVariables
+  variables: Record<string, unknown>
 ): Promise<string> {
   const targetPath = join(targetDir, renderPath(relPath, variables));
   await fse.ensureDir(join(targetPath, '..'));
@@ -261,7 +272,7 @@ async function applyFile(
 export interface CopyDirOptions {
   sourceDir: string;
   targetDir: string;
-  variables: TemplateVariables;
+  variables: Record<string, unknown>;
 }
 
 export async function copyTemplateDir(options: CopyDirOptions): Promise<string[]> {
@@ -285,6 +296,67 @@ export {renderString};
 export function resolveSharedDir(templatesDir: string): string | null {
   const candidate = join(templatesDir, '_shared', 'files');
   return existsSync(candidate) ? candidate : null;
+}
+
+export interface CopyStubsOptions {
+  sourceDir: string;
+  targetDir: string;
+  variables: Record<string, unknown>;
+}
+
+export interface CopyStubsEntry {
+  /** Destination path relative to `targetDir` (with `<%= … %>` substituted). */
+  rel: string;
+  /** `false` when the file already existed and was left untouched. */
+  created: boolean;
+}
+
+/**
+ * Copy a stub tree under `templates/_add/...` into `targetDir`, substituting
+ * `<%= var %>` in both file paths and file contents. Files already present at
+ * the destination are skipped — re-running an `lhx-cli add` command never
+ * clobbers user edits.
+ *
+ * Differs from `copyTemplateDir`:
+ * - Skip-if-exists semantics (no append/merge for `.gitignore` / `.env` /
+ *   `package.json`). Stubs are per-invocation and idempotency comes from
+ *   skip-if-exists rather than the merge magic that `create` needs.
+ * - No special-case rendering paths — every file reads as UTF-8 and writes
+ *   the rendered body. Don't put binary assets under `_add/`.
+ */
+export async function copyStubs(options: CopyStubsOptions): Promise<CopyStubsEntry[]> {
+  if (!existsSync(options.sourceDir)) {
+    throw new Error(`stub directory missing: ${options.sourceDir}`);
+  }
+  const result: CopyStubsEntry[] = [];
+  const files = await walkFiles(options.sourceDir);
+  for (const file of files) {
+    const srcRel = file.slice(options.sourceDir.length + 1);
+    const dstRel = renderPath(srcRel, options.variables);
+    const dstAbs = join(options.targetDir, dstRel);
+    if (existsSync(dstAbs)) {
+      result.push({rel: dstRel, created: false});
+      continue;
+    }
+    await fse.ensureDir(join(dstAbs, '..'));
+    const raw = await fse.readFile(file, 'utf8');
+    const body = renderString(raw, options.variables);
+    await fse.writeFile(dstAbs, body);
+    result.push({rel: dstRel, created: true});
+  }
+  return result;
+}
+
+/**
+ * Read a single stub file from disk and return its rendered body. Caller
+ * decides the destination path — used by `lhx-cli add` for kinds whose
+ * destination depends on runtime checks (e.g. `add schema` writes under
+ * `pages/<name>/render.json` or `schemas/<name>.json` depending on whether
+ * the page dir already exists).
+ */
+export async function renderStubFile(stubFile: string, variables: Record<string, unknown>): Promise<string> {
+  const raw = await fse.readFile(stubFile, 'utf8');
+  return renderString(raw, variables);
 }
 
 export interface ScaffoldFeature {
@@ -348,7 +420,7 @@ export async function loadFeaturesForTemplate(
  * indicates the template author removed the anchor and a feature now points
  * at a void.
  */
-export async function applyPatchOp(targetDir: string, op: PatchOp, variables: TemplateVariables): Promise<void> {
+export async function applyPatchOp(targetDir: string, op: PatchOp, variables: Record<string, unknown>): Promise<void> {
   const filePath = join(targetDir, op.file);
   if (!existsSync(filePath)) {
     throw new Error(`patch target missing: ${op.file} (op=${op.op})`);
@@ -406,7 +478,7 @@ export async function applyPatchOp(targetDir: string, op: PatchOp, variables: Te
 export interface ApplyFeatureOptions {
   feature: ScaffoldFeature;
   targetDir: string;
-  variables: TemplateVariables;
+  variables: Record<string, unknown>;
   /**
    * Top-level template name (e.g. `lib-monorepo`). Required so features can
    * decide whether to fan out their files+overlay across `packages/*` (see

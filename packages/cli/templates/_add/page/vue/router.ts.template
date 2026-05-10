@@ -1,0 +1,22 @@
+import {createRouter, createWebHashHistory, type RouteRecordRaw} from 'vue-router';
+
+/**
+ * Router scoped to the "<%= name %>" MPA page. Hash history keeps this page
+ * self-contained — no server-side URL rewrites required.
+ */
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    component: () => import('./views/<%= Name %>Landing.vue'),
+    meta: {title: 'Landing'}
+  },
+  {
+    path: '/about',
+    component: () => import('./views/<%= Name %>About.vue'),
+    meta: {title: 'About'}
+  }
+];
+
+export function create<%= Name %>Router() {
+  return createRouter({history: createWebHashHistory(), routes});
+}

@@ -1,0 +1,54 @@
+{
+  "name": "<%= fullName %>",
+  "version": "0.0.0",
+  "description": "<%= description %>",
+  "keywords": ["lhx-kit"],
+  "license": "MIT",
+  "author": "luhanxin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juwenzhang/lhx-kit.git",
+    "directory": "packages/<%= name %>"
+  },
+  "homepage": "https://juwenzhang.github.io/lhx-kit/",
+  "bugs": {
+    "url": "https://github.com/juwenzhang/lhx-kit/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "<%= scope %>/tsconfig": "workspace:*",
+    "@types/node": "^25.6.0",
+    "tsup": "^8.3.5",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

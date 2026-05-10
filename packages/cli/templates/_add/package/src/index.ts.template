@@ -1,0 +1,15 @@
+/**
+ * <%= fullName %> — <%= description %>
+ *
+ * Replace the starter export below with the real API surface for this package.
+ * Remember to update README.md with usage examples before publishing.
+ */
+
+export const <%= camelName %>Version = '0.0.0';
+
+/**
+ * Example helper. Delete once you add your real implementation.
+ */
+export function hello<%= Name %>(who = 'world'): string {
+  return `Hello, ${who}! (from <%= fullName %>)`;
+}

@@ -18,8 +18,9 @@
  */
 import {relative as pathRelative} from 'node:path';
 import prompts from 'prompts';
-import type {CliContext} from '../context';
-import {info, muted, section, success, warn} from '../ui';
+import type {CommandDescriptor} from '../core/command';
+import type {CliContext} from '../core/context';
+import {info, muted, section, success, warn} from '../utils/ui';
 
 export interface SkillsOptions {
   targets?: string;
@@ -198,3 +199,22 @@ async function loadSkillsModule(): Promise<typeof import('@lhx-kit/skills') | nu
     return null;
   }
 }
+
+export const skillsCommand: CommandDescriptor = {
+  name: 'skills [action] [...names]',
+  description: 'Manage agent-agnostic skills: list | add | sync',
+  options: [
+    {
+      flags: '--targets <list>',
+      description: 'Comma-separated targets: codebuddy,cursor,claude,plain',
+      default: ''
+    },
+    {flags: '--all', description: 'Select every bundled skill'},
+    {flags: '--force', description: 'Overwrite existing files on disk'},
+    {flags: '--yes', description: 'Non-interactive mode (defaults: list / all skills / plain target)'}
+  ],
+  run: (context, action, names, options) => {
+    const normalisedAction = (action as 'list' | 'add' | 'sync' | undefined) ?? undefined;
+    return runSkillsCommand(context, normalisedAction, (names as string[] | undefined) ?? [], options as SkillsOptions);
+  }
+};

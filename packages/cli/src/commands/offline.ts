@@ -10,10 +10,12 @@ import {
   writeOfflineManifest
 } from '@lhx-kit/offline';
 import {execa} from 'execa';
-import type {CliContext} from '../context';
-import {deriveOfflineConfig, formatOfflineZipName, type HybridType} from '../offline-adapter';
-import {requireProject} from '../project';
-import {error, info, section, success, warn} from '../ui';
+import {bold} from 'kolorist';
+import {deriveOfflineConfig, formatOfflineZipName, type HybridType} from '../adapters/offline';
+import type {CommandDescriptor} from '../core/command';
+import type {CliContext} from '../core/context';
+import {requireProject} from '../core/project';
+import {error, info, section, success, warn} from '../utils/ui';
 
 export interface OfflineCommandOptions {
   buildDir?: string;
@@ -139,3 +141,87 @@ export async function runOfflineDiff(): Promise<void> {
   warn('offline diff is reserved for a future release.');
   process.exitCode = 2;
 }
+
+function printOfflineHelp(): void {
+  console.log(`${bold('lhx-cli offline')}`);
+  console.log('  build      Build project and package dist-offline + manifest + zip');
+  console.log('  manifest   Generate only manifest.json from dist');
+  console.log('  inspect    Inspect dist-offline directory or zip file');
+  console.log('  diff       Reserved: incremental package output');
+}
+
+/**
+ * Route an `offline <action> [target]` invocation to the right runner. When no
+ * action is supplied and the CLI is interactive, prompts the user; otherwise
+ * prints the action menu and returns.
+ */
+async function runOfflineRoute(
+  context: CliContext,
+  action: string | undefined,
+  target: string | undefined,
+  options: OfflineCommandOptions & {yes?: boolean}
+): Promise<void> {
+  let resolvedAction = action;
+  if (!resolvedAction) {
+    if (options.yes || !(process.stdin.isTTY && process.stdout.isTTY)) {
+      printOfflineHelp();
+      return;
+    }
+    const picked = await (await import('prompts')).default(
+      {
+        type: 'select',
+        name: 'action',
+        message: 'Pick an offline action',
+        choices: [
+          {
+            title: 'build',
+            description: 'Run project build and package dist-offline + manifest + zip',
+            value: 'build'
+          },
+          {title: 'manifest', description: 'Generate only manifest.json from dist', value: 'manifest'},
+          {title: 'inspect', description: 'Inspect a dist-offline directory or zip file', value: 'inspect'},
+          {title: 'diff', description: 'Reserved: incremental package output', value: 'diff'}
+        ]
+      },
+      {onCancel: () => process.exit(130)}
+    );
+    resolvedAction = picked.action as string | undefined;
+    if (!resolvedAction) return;
+  }
+  switch (resolvedAction) {
+    case 'build':
+      await runOfflineBuild(context, options);
+      return;
+    case 'manifest':
+      await runOfflineManifest(context, options);
+      return;
+    case 'inspect':
+      await runOfflineInspect(context, target);
+      return;
+    case 'diff':
+      await runOfflineDiff();
+      return;
+    default:
+      printOfflineHelp();
+  }
+}
+
+export const offlineCommand: CommandDescriptor = {
+  name: 'offline [action] [target]',
+  description: 'Offline packaging: build | manifest | inspect | diff',
+  options: [
+    {flags: '--build-dir <dir>', description: 'Override build directory'},
+    {flags: '--out-dir <dir>', description: 'Override offline output directory'},
+    {flags: '--no-zip', description: 'Skip zip generation for offline build'},
+    {flags: '--skip-build', description: 'Skip automatic pnpm build when running offline build'},
+    {flags: '--hybrid-type <type>', description: 'Which version track to package (test | prod)'},
+    {flags: '--yes', description: 'Non-interactive mode'}
+  ],
+  run: (context, action, target, options) =>
+    runOfflineRoute(
+      context,
+      action as string | undefined,
+      target as string | undefined,
+      options as OfflineCommandOptions & {yes?: boolean}
+    )
+};

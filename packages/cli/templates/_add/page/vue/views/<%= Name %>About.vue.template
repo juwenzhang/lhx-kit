@@ -1,0 +1,15 @@
+<script setup lang="ts">
+// Second in-page view for the "<%= name %>" MPA entry.
+</script>
+
+<template>
+  <section class="<%= name %>-about">
+    <h2>About this page</h2>
+    <p>
+      Sub-route inside the <code><%= name %></code> MPA entry. Each MPA page
+      owns its own router; other entries (e.g. <code>/settings/</code>)
+      are unaffected.
+    </p>
+    <router-link to="/">Back to landing</router-link>
+  </section>
+</template>

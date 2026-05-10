@@ -1,9 +1,10 @@
 import {spawn} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {dirname, resolve as resolvePath} from 'node:path';
-import type {CliContext} from '../context';
-import {requireProject} from '../project';
-import {error, info, muted, section} from '../ui';
+import type {CommandDescriptor, CommandOption} from '../core/command';
+import type {CliContext} from '../core/context';
+import {requireProject} from '../core/project';
+import {error, info, muted, section} from '../utils/ui';
 
 const require = createRequire(import.meta.url);
 
@@ -137,3 +138,47 @@ export async function runPreviewCommand(context: CliContext, options: DevBuildOp
     process.exitCode = 1;
   }
 }
+
+/**
+ * Vite-server flags shared by `dev` and `preview`. `build` doesn't take them
+ * — we only forward server flags to the long-running subcommands.
+ */
+const VITE_SERVER_OPTIONS: CommandOption[] = [
+  {flags: '--host [host]', description: 'Specify hostname (forwarded to vite)'},
+  {flags: '--port <port>', description: 'Specify port (forwarded to vite)'},
+  {flags: '--strictPort', description: 'Exit if port is already in use (forwarded to vite)'},
+  {flags: '--open [path]', description: 'Open browser on startup (forwarded to vite)'},
+  {flags: '--base <path>', description: 'Public base path (forwarded to vite)'}
+];
+
+export const devCommand: CommandDescriptor = {
+  name: 'dev',
+  description: 'Run the project dev server (multi-page aware)',
+  options: [
+    {flags: '--page <name>', description: 'Page to run (alias of --pages for a single name)'},
+    {flags: '--pages <list>', description: 'Comma-separated list of pages to include'},
+    ...VITE_SERVER_OPTIONS
+  ],
+  run: (context, options) => runDevCommand(context, options as DevBuildOptions)
+};
+
+export const buildCommand: CommandDescriptor = {
+  name: 'build',
+  description: 'Build the project (multi-page aware)',
+  options: [
+    {flags: '--page <name>', description: 'Page to build (alias of --pages for a single name)'},
+    {flags: '--pages <list>', description: 'Comma-separated list of pages to include'}
+  ],
+  run: (context, options) => runBuildCommand(context, options as DevBuildOptions)
+};
+
+export const previewCommand: CommandDescriptor = {
+  name: 'preview',
+  description: 'Preview the built project',
+  options: [
+    {flags: '--page <name>', description: 'Page to preview'},
+    {flags: '--pages <list>', description: 'Comma-separated list of pages to include'},
+    ...VITE_SERVER_OPTIONS
+  ],
+  run: (context, options) => runPreviewCommand(context, options as DevBuildOptions)
+};
