@@ -4,5 +4,10 @@
 #
 # 逃生舱：
 #   git commit --no-verify   （应急使用；正常 PR 不应走此路径）
+#
+# `--config <root>/lint-staged.config.cjs` 强制使用根配置，跳过
+# `examples/{rmpa,vmpa}/lint-staged.config.cjs` 等嵌套配置。examples 是
+# 终端用户脚手架的参考实现（含他们自己的 husky / eslint / lint-staged），
+# 不应该用它们的本地规则去检查 monorepo 自身的提交。
 
-pnpm exec lint-staged
+pnpm exec lint-staged --config lint-staged.config.cjs

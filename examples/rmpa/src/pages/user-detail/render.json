@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "name": "user-detail",
+  "components": [
+    {
+      "name": "Section",
+      "id": "title-section",
+      "props": {"title": {"$": "state.title"}}
+    },
+    {
+      "name": "Banner",
+      "id": "loading-banner",
+      "when": {"eq": [{"$": "state.loading"}, true]},
+      "props": {"text": "加载中…", "kind": "info"}
+    },
+    {
+      "name": "Banner",
+      "id": "error-banner",
+      "when": {"exists": {"$": "state.error"}},
+      "props": {"text": {"$": "state.error"}, "kind": "error"}
+    },
+    {
+      "name": "Section",
+      "id": "form-section",
+      "when": {"eq": [{"$": "state.loading"}, false]},
+      "props": {"title": "基本资料"},
+      "children": [
+        {"name": "FormField", "props": {"label": "姓名", "field": "name", "value": {"$": "state.user.name"}}},
+        {"name": "FormField", "props": {"label": "邮箱", "field": "email", "value": {"$": "state.user.email"}}},
+        {"name": "FormField", "props": {"label": "电话", "field": "phone", "value": {"$": "state.user.phone"}}}
+      ]
+    },
+    {
+      "name": "Section",
+      "id": "actions-section",
+      "when": {"eq": [{"$": "state.loading"}, false]},
+      "props": {"title": "操作"},
+      "children": [
+        {
+          "name": "ActionButton",
+          "id": "save-btn",
+          "props": {"text": "保存", "kind": "primary", "loading": {"$": "state.saving"}},
+          "events": {"click": {"type": "saveUser"}}
+        },
+        {
+          "name": "ActionButton",
+          "id": "delete-btn",
+          "when": {"eq": [{"$": "flags.role"}, "admin"]},
+          "props": {"text": "删除用户", "kind": "danger"},
+          "events": {"click": {"type": "deleteUser"}}
+        }
+      ]
+    }
+  ]
+}

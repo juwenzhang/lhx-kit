@@ -52,7 +52,8 @@ export default defineProjectConfig({
     settings: {
       title: 'RMPA Demo - Settings'
     },
-    dashboard: {title: 'Dashboard'}
+    dashboard: {title: 'Dashboard'},
+    'user-detail': {title: 'User Detail (renderer boundary demo)'}
   },
 
   // ---------------------------------------------------------------------

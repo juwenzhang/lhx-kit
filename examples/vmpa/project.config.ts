@@ -45,7 +45,8 @@ export default defineProjectConfig({
     },
     settings: {
       title: 'VMPA Demo - Settings'
-    }
+    },
+    'user-detail': {title: 'User Detail (renderer boundary demo)'}
   },
 
   // CDN externalisation. When enabled at build/preview time the kit strips

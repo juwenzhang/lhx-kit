@@ -61,9 +61,10 @@ lhx-kit/
 ├── apps/
 │   └── docs/          📘 Rspress documentation site (publishes to GitHub Pages)
 ├── examples/
-│   ├── vmpa/          🟢 Vue 3 MPA demo
-│   └── rmpa/          🔵 React MPA demo
+│   ├── vmpa/          🟢 Vue 3 MPA demo (incl. `user-detail` renderer-boundary page)
+│   └── rmpa/          🔵 React MPA demo (incl. `user-detail` renderer-boundary page)
 ├── packages/          📦 8 publishable workspaces (see table above)
+├── RENDERER-UPGRADE-PLAN.md  🎨 @lhx-kit/renderer capability boundary + 4-step upgrade roadmap
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yaml                  ✅ Lint / typecheck / build / cross-platform
@@ -183,6 +184,7 @@ All eight carry signature markers to prevent bot-loop-back. Read the full playbo
 - 📦 [Offline packaging deep-dive](https://juwenzhang.github.io/lhx-kit/offline/packaging-deep-dive) — compression libs, hashing, algorithms
 - 🧩 [Vite plugin internals](https://juwenzhang.github.io/lhx-kit/runtime/vite-plugin) — manifest-driven chunk grouping
 - 🔥 [Rolldown migration post-mortem](https://juwenzhang.github.io/lhx-kit/runtime/rolldown-migration) — how Vite 8 broke our `generateBundle`
+- 🎨 [**Renderer upgrade plan**](./RENDERER-UPGRADE-PLAN.md) — `@lhx-kit/renderer` capability boundary, gap-by-gap audit (state / events / AOP / route / lifecycle / error-boundary) backed by a real React+Vue demo at `examples/{rmpa,vmpa}/src/pages/user-detail/`, plus a 4-step landing roadmap
 
 ---
 

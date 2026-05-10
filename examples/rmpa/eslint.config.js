@@ -21,7 +21,10 @@ export default [
       }
     },
     settings: {
-      react: {version: 'detect'}
+      // Fixed version (not 'detect') because eslint-plugin-react 7.37.x crashes
+      // on ESLint 10's API change (`contextOrFilename.getFilename is not a function`).
+      // The plugin's auto-detection codepath calls a method that no longer exists.
+      react: {version: '19.0'}
     },
     rules: {
       ...reactPlugin.configs.recommended.rules,

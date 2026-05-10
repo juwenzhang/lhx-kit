@@ -100,7 +100,7 @@
   "git.autofetch": true,
   "git.confirmSync": false,
   "git.enableSmartCommit": false,
-  "git.inputValidation": "always",
+  "git.inputValidation": true,
   "git.inputValidationLength": 100,
   "git.inputValidationSubjectLength": 72,
 

@@ -61,9 +61,10 @@ lhx-kit/
 ├── apps/
 │   └── docs/          📘 Rspress 文档站（自动部署到 GitHub Pages）
 ├── examples/
-│   ├── vmpa/          🟢 Vue 3 MPA 示例
-│   └── rmpa/          🔵 React MPA 示例
+│   ├── vmpa/          🟢 Vue 3 MPA 示例（含 `user-detail` renderer 边界探针页）
+│   └── rmpa/          🔵 React MPA 示例（含 `user-detail` renderer 边界探针页）
 ├── packages/          📦 8 个可发布 workspace（见上表）
+├── RENDERER-UPGRADE-PLAN.md  🎨 @lhx-kit/renderer 能力边界 + 四步升级路线图
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yaml                  ✅ Lint / typecheck / 构建 / 跨平台
@@ -183,6 +184,7 @@ pnpm exec lhx-cli add package my-utility   # 自动识别 monorepo 根、
 - 📦 [离线打包深度剖析](https://juwenzhang.github.io/lhx-kit/offline/packaging-deep-dive) —— 压缩库、哈希、算法对比
 - 🧩 [Vite 插件实现详解](https://juwenzhang.github.io/lhx-kit/runtime/vite-plugin) —— manifest 驱动的 chunk 分组
 - 🔥 [Rolldown 迁移记](https://juwenzhang.github.io/lhx-kit/runtime/rolldown-migration) —— Vite 8 如何打破我们的 `generateBundle`
+- 🎨 [**Renderer 升级计划书**](./RENDERER-UPGRADE-PLAN.md) —— `@lhx-kit/renderer` 能力边界，逐条缺口审计（state / events / AOP / route / lifecycle / error-boundary），由真实双端 demo `examples/{rmpa,vmpa}/src/pages/user-detail/` 实测驱动，附四步落地路线图
 
 ---
 
