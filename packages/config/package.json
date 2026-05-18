@@ -51,12 +51,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "jiti": "^2.4.2",
-    "zod": "^4.4.2"
+    "jiti": "^2.7.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@lhx-kit/tsconfig": "workspace:*",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.8.0",
     "tsup": "^8.3.5",
     "typescript": "^6.0.3"
   },
