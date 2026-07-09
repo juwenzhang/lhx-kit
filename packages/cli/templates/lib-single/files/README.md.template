@@ -32,4 +32,4 @@ lhx-cli create my-lib --template=lib-single --features=bundler-rollup,format-esm
 ## Resources
 
 - 🐛 Issues: https://github.com/juwenzhang/lhx-kit/issues
-- 📖 Docs: https://lhx-kit.dev/templates/catalogue
+- 📖 Docs: https://juwenzhang.github.io/lhx-kit/

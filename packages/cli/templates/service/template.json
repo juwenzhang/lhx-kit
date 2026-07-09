@@ -1,0 +1,10 @@
+{
+  "name": "service",
+  "title": "Service (TypeScript)",
+  "description": "A TypeScript service. Framework is selected via --features: framework-express (default), framework-fastify, or framework-koa. Database (pg | mysql | none) and cache (redis | none) are scaffold-time feature axes.",
+  "category": "backend",
+  "projectType": "service",
+  "extends": "_shared",
+  "defaultFeatures": ["framework-express"],
+  "tags": ["node", "ts", "service", "docker"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "micro",
+  "title": "Microservice (TypeScript)",
+  "description": "A TypeScript microservice with Redis (BullMQ) built-in. Framework is selected via --features: framework-express (default), framework-fastify, or framework-koa. Ships health endpoints, multistage Dockerfile, and k8s manifests.",
+  "category": "backend",
+  "projectType": "service",
+  "extends": "_shared",
+  "defaultFeatures": ["framework-express"],
+  "tags": ["node", "ts", "microservice", "bullmq", "docker", "k8s"]
+}

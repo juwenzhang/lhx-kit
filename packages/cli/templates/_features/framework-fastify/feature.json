@@ -1,0 +1,19 @@
+{
+  "name": "framework-fastify",
+  "title": "Framework: Fastify",
+  "description": "Fastify 5 web framework with @fastify/compress, @fastify/cors, @fastify/helmet, and built-in pino logging.",
+  "appliesTo": ["micro", "service"],
+  "mutexGroup": "framework",
+  "isDefault": false,
+  "priority": 101,
+  "files": ["files"],
+  "packageOverlay": {
+    "dependencies": {
+      "@fastify/compress": "^8.0.0",
+      "@fastify/cors": "^10.0.0",
+      "@fastify/helmet": "^13.0.0",
+      "@fastify/sensible": "^6.0.0",
+      "fastify": "^5.0.0"
+    }
+  }
+}

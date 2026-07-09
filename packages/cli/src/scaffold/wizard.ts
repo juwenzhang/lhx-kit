@@ -30,7 +30,7 @@ export interface WizardAnswers {
   /** Frontend only. */
   cssAtomic?: 'unocss' | 'tailwind' | 'none';
   /** Frontend only. */
-  cssStyling?: 'modules' | 'emotion' | 'styled' | 'vanilla-extract' | 'vue-scoped' | 'none';
+  cssStyling?: 'modules' | 'styled' | 'vanilla-extract';
   /** Optional features (multi-select; excludes target/ui/css feature names). */
   features: string[];
   packageManager: 'pnpm' | 'npm' | 'yarn' | 'bun';
@@ -43,7 +43,7 @@ const FRONTEND_TEMPLATES = new Set(['vue3-mpa', 'react-mpa']);
 const LIBRARY_TEMPLATES = new Set(['lib-single', 'lib-monorepo']);
 
 /** Micro templates — Redis is built-in; no cache prompt. */
-const MICRO_TEMPLATES = new Set(['express-micro', 'koa-micro', 'fastify-micro']);
+const MICRO_TEMPLATES = new Set(['micro']);
 
 function isFrontendTemplate(name: string, manifest?: TemplateManifest): boolean {
   if (FRONTEND_TEMPLATES.has(name)) return true;
@@ -152,14 +152,10 @@ export async function runWizard(input: WizardInput): Promise<WizardAnswers> {
       const stylingChoices: Array<{value: string; label: string; hint?: string}> = [
         {value: 'modules', label: 'CSS Modules', hint: 'default — Vite native'}
       ];
-      if (template === 'vue3-mpa') {
-        stylingChoices.push({value: 'vue-scoped', label: '<style scoped> + <style module>'});
-      } else {
-        stylingChoices.push({value: 'emotion', label: 'Emotion'});
+      if (template === 'react-mpa') {
         stylingChoices.push({value: 'styled', label: 'styled-components'});
       }
       stylingChoices.push({value: 'vanilla-extract', label: 'Vanilla Extract', hint: 'zero-runtime CSS-in-TS'});
-      stylingChoices.push({value: 'none', label: 'None'});
 
       cssStyling = (await assertNotCancelled(
         p.select({

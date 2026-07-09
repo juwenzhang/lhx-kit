@@ -2,7 +2,7 @@
   "name": "cache-redis",
   "title": "Cache: Redis (default)",
   "description": "Redis via ioredis. Adds REDIS_URL env, client singleton, docker-compose service.",
-  "appliesTo": ["express-service", "koa-service", "fastify-service", "business-mono"],
+  "appliesTo": ["service", "business-mono"],
   "mutexGroup": "cache",
   "isDefault": true,
   "priority": 550,

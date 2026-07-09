@@ -1,12 +1,17 @@
 {
   "name": "codebuddy-skills",
   "title": "AI workflow scaffolding (.codebuddy + openspec)",
-  "description": "Adds an openspec/ scaffold and .codebuddy/ skill registry. Empty by default; mirror lhx-kit's openspec-* skills if you want the spec-driven AI flow.",
+  "description": "Adds an openspec/ scaffold and .codebuddy/ skill registry. Includes @lhx-kit/skills so lhx-cli skills add/list/sync works out of the box.",
   "appliesTo": [],
   "mutexGroup": null,
   "isDefault": false,
   "priority": 500,
   "files": ["files"],
+  "packageOverlay": {
+    "devDependencies": {
+      "@lhx-kit/skills": "<%= lhxKitVersionRange %>"
+    }
+  },
   "gitignoreAppend": [
     ".codebuddy/cache/"
   ]

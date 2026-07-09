@@ -1,9 +1,0 @@
-{
-  "name": "fastify-service",
-  "title": "Fastify service (TypeScript-only)",
-  "description": "A Fastify 5 + TypeScript service. Ships built-in pino logger, zod env validation, multistage Dockerfile, healthz endpoint, and graceful shutdown. Database (pg | mysql | none) and cache (redis | none) are scaffold-time feature axes.",
-  "category": "backend",
-  "projectType": "service",
-  "extends": "_shared",
-  "tags": ["fastify", "node", "ts", "service", "docker"]
-}

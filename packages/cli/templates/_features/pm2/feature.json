@@ -2,11 +2,7 @@
   "name": "pm2",
   "title": "Process manager: PM2 + cluster",
   "description": "Adds an ecosystem.config.cjs for PM2 process management with cluster mode (all CPU cores). Scripts: start:pm2, stop:pm2, reload:pm2, logs:pm2.",
-  "appliesTo": [
-    "express-service", "koa-service", "fastify-service",
-    "express-micro", "koa-micro", "fastify-micro",
-    "node-ts"
-  ],
+  "appliesTo": ["service", "micro", "node-ts"],
   "mutexGroup": null,
   "isDefault": false,
   "priority": 900,

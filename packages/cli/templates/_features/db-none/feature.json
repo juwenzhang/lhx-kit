@@ -2,11 +2,7 @@
   "name": "db-none",
   "title": "Database: none",
   "description": "Skip database scaffolding. No DATABASE_URL, no docker service, no client singleton.",
-  "appliesTo": [
-    "express-service", "koa-service", "fastify-service",
-    "express-micro", "koa-micro", "fastify-micro",
-    "business-mono"
-  ],
+  "appliesTo": ["service", "micro", "business-mono"],
   "mutexGroup": "db",
   "isDefault": false,
   "priority": 500

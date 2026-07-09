@@ -24,8 +24,7 @@ pnpm build               # build every registered page
 ├── template.html            # HTML shell (`{{ title }}` / `{{ entry }}` placeholders)
 ├── vite.config.ts           # `defineConfig({plugins: [lhxKit(), vue()]})`
 ├── tsconfig.json
-├── eslint.config.js         # ESLint v9 flat config (vue + typescript)
-├── .prettierrc.json
+├── biome.json               # Lint + format config (Biome)
 ├── .env.dev
 ├── .env.prod
 └── src/
@@ -150,3 +149,8 @@ lhx-cli offline build --hybrid-type=prod
 ```
 
 See the lhx-kit docs for the contract details.
+
+## Resources
+
+- 🐛 https://github.com/juwenzhang/lhx-kit/issues
+- 📖 https://juwenzhang.github.io/lhx-kit/

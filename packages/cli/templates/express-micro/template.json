@@ -1,9 +1,0 @@
-{
-  "name": "express-micro",
-  "title": "Express microservice (TypeScript-only)",
-  "description": "An Express 4 + TypeScript microservice. Ships Redis (ioredis + BullMQ) built-in, structured logger (pino), zod env, /livez + /readyz health endpoints, multistage Dockerfile, and k8s manifests. Database (pg | mysql | none) is a scaffold-time feature axis.",
-  "category": "backend",
-  "projectType": "service",
-  "extends": "_shared",
-  "tags": ["express", "node", "ts", "microservice", "bullmq", "docker", "k8s"]
-}
