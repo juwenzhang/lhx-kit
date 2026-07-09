@@ -8,6 +8,15 @@
     "typescript",
     "shared-config"
   ],
+  "exports": {
+    "./base.json": "./base.json",
+    "./library.json": "./library.json",
+    "./react.json": "./react.json",
+    "./vue.json": "./vue.json",
+    "./node.json": "./node.json",
+    "./app-react.json": "./app-react.json",
+    "./app-vue.json": "./app-vue.json"
+  },
   "license": "MIT",
   "author": "luhanxin",
   "repository": {
