@@ -16,7 +16,8 @@
  * shell over the programmatic API, which means `scripts/*.mjs` consumers
  * get the same behaviour.
  */
-import {relative as pathRelative} from 'node:path';
+import {createRequire} from 'node:module';
+import {join, relative as pathRelative} from 'node:path';
 import prompts from 'prompts';
 import type {CommandDescriptor} from '../core/command';
 import type {CliContext} from '../core/context';
@@ -37,7 +38,7 @@ export async function runSkillsCommand(
   rest: string[],
   options: SkillsOptions
 ): Promise<void> {
-  const skillsMod = await loadSkillsModule();
+  const skillsMod = await loadSkillsModule(context.cwd);
   if (!skillsMod) {
     warn('@lhx-kit/skills is not installed. Run: pnpm add -D @lhx-kit/skills');
     return;
@@ -188,13 +189,18 @@ function relative(from: string, to: string): string {
 }
 
 /**
- * The `@lhx-kit/skills` package is an optional peer: projects that don't
- * care about skills should not be forced to install it. We dynamic-import
- * so the CLI remains usable even when skills isn't a dep.
+ * Resolve `@lhx-kit/skills` from the user's project root (`cwd`) rather than
+ * from the CLI's own `node_modules`. pnpm's strict isolation means the CLI
+ * cannot see packages installed in the user's project via a bare
+ * `import()`, even if they're declared as optional peer deps. We use
+ * `createRequire` from the project root to locate the package, then
+ * `import()` the resolved absolute path.
  */
-async function loadSkillsModule(): Promise<typeof import('@lhx-kit/skills') | null> {
+async function loadSkillsModule(cwd: string): Promise<typeof import('@lhx-kit/skills') | null> {
   try {
-    return (await import('@lhx-kit/skills')) as typeof import('@lhx-kit/skills');
+    const require = createRequire(join(cwd, 'noop.js'));
+    const resolved = require.resolve('@lhx-kit/skills');
+    return (await import(resolved)) as typeof import('@lhx-kit/skills');
   } catch {
     return null;
   }
