@@ -721,6 +721,12 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@25.6.0)(@vitest/ui@4.1.5)(jsdom@29.1.1)(msw@2.14.2(@types/node@25.6.0)(typescript@6.0.3))(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.99.0)(sass@1.99.0)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
 
+  examples/skills-test:
+    devDependencies:
+      '@lhx-kit/skills':
+        specifier: workspace:*
+        version: link:../../packages/skills
+
   examples/vmpa:
     dependencies:
       '@lhx-kit/renderer':
