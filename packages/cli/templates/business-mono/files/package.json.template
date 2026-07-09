@@ -7,9 +7,9 @@
   "packageManager": "pnpm@10.0.0",
   "engines": {"node": ">=20.0.0", "pnpm": ">=9.0.0"},
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
-    "typecheck": "turbo run typecheck",
+    "build": "pnpm -r --filter='./apps/*' --filter='./packages/*' build",
+    "dev": "pnpm -r --parallel --filter='./apps/*' --filter='./packages/*' dev",
+    "typecheck": "pnpm -r --filter='./apps/*' --filter='./packages/*' typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
@@ -21,7 +21,6 @@
     "@commitlint/config-conventional": "^19.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
-    "turbo": "^2.5.0",
     "typescript": "^5.4.0"
   }
 }

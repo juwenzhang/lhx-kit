@@ -55,7 +55,7 @@ function isLibraryTemplate(name: string, manifest?: TemplateManifest): boolean {
   return manifest?.category === 'library';
 }
 
-function isBackendTemplate(name: string, manifest?: TemplateManifest): boolean {
+function isBackendTemplate(_name: string, manifest?: TemplateManifest): boolean {
   return manifest?.category === 'backend';
 }
 
