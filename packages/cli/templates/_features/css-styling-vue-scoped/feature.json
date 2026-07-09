@@ -1,9 +1,0 @@
-{
-  "name": "css-styling-vue-scoped",
-  "title": "CSS styling: Vue <style scoped> + module",
-  "description": "Vue SFC built-in scoped + CSS Modules. Vue-only.",
-  "appliesTo": ["vue3-mpa"],
-  "mutexGroup": "css-styling",
-  "isDefault": false,
-  "priority": 400
-}

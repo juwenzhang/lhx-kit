@@ -2,11 +2,7 @@
   "name": "db-pg",
   "title": "Database: PostgreSQL (default)",
   "description": "PostgreSQL via node-postgres. Adds DATABASE_URL env, db client singleton, docker-compose service.",
-  "appliesTo": [
-    "express-service", "koa-service", "fastify-service",
-    "express-micro", "koa-micro", "fastify-micro",
-    "business-mono"
-  ],
+  "appliesTo": ["service", "micro", "business-mono"],
   "mutexGroup": "db",
   "isDefault": true,
   "priority": 500,

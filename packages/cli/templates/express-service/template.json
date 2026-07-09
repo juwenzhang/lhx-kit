@@ -1,9 +1,0 @@
-{
-  "name": "express-service",
-  "title": "Express service (TypeScript-only)",
-  "description": "An Express + TypeScript service with multistage Dockerfile, structured logger (pino), .env scaffold, healthz endpoint, and graceful shutdown. Database (pg | mysql | none) and cache (redis | none) are scaffold-time feature axes — re-scaffold to switch.",
-  "category": "backend",
-  "projectType": "service",
-  "extends": "_shared",
-  "tags": ["express", "node", "ts", "service", "docker"]
-}

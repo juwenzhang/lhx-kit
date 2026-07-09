@@ -44,8 +44,8 @@ export interface CreateOptions {
   cssPreprocessor?: 'less' | 'sass' | 'none';
   /** CSS atomic system: `unocss` (default) | `tailwind` | `none`. */
   cssAtomic?: 'unocss' | 'tailwind' | 'none';
-  /** Component-level styling: `modules` (default) | `emotion` | `styled` | `vanilla-extract` | `vue-scoped` | `none`. */
-  cssStyling?: 'modules' | 'emotion' | 'styled' | 'vanilla-extract' | 'vue-scoped' | 'none';
+  /** Component-level styling: `modules` (default) | `styled` | `vanilla-extract`. */
+  cssStyling?: 'modules' | 'styled' | 'vanilla-extract';
   yes?: boolean;
   force?: boolean;
   /**
@@ -92,16 +92,9 @@ function resolveAxisFeature(features: string[], prefix: string, flag: string | u
 }
 
 function validateCssCompat(features: string[], manifest: TemplateManifest): void {
-  const isVue = manifest.framework === 'vue3' || manifest.name === 'vue3-mpa';
   const isReact = manifest.framework === 'react' || manifest.name === 'react-mpa';
-  if (features.includes('css-styling-emotion') && !isReact) {
-    throw new Error(`css-styling-emotion is React-only — incompatible with template ${manifest.name}`);
-  }
   if (features.includes('css-styling-styled') && !isReact) {
     throw new Error(`css-styling-styled is React-only — incompatible with template ${manifest.name}`);
-  }
-  if (features.includes('css-styling-vue-scoped') && !isVue) {
-    throw new Error(`css-styling-vue-scoped is Vue-only — incompatible with template ${manifest.name}`);
   }
 }
 
@@ -289,7 +282,7 @@ export async function runCreateCommand(
   // Backend templates: default to pg + redis when no db/cache feature is
   // provided. Micro templates have Redis built-in (not a feature), so only
   // the db axis gets a default injection for them.
-  const isMicroTemplate = ['express-micro', 'koa-micro', 'fastify-micro'].includes(templateSource.manifest.name);
+  const isMicroTemplate = templateSource.manifest.name === 'micro';
   if (templateSource.manifest.category === 'backend') {
     const hasAnyDb = features.some(f => f.startsWith('db-'));
     if (!hasAnyDb) features = [...features, 'db-pg'];

@@ -24,8 +24,7 @@ pnpm build               # build every registered page
 ├── template.html            # HTML shell (`{{ title }}` / `{{ entry }}` placeholders)
 ├── vite.config.ts           # `defineConfig({plugins: [lhxKit(), react()]})`
 ├── tsconfig.json
-├── eslint.config.js         # ESLint v9 flat config (react + typescript)
-├── .prettierrc.json
+├── biome.json               # Lint + format config (Biome)
 ├── .env.dev / .env.prod
 └── src/
     ├── env.d.ts             # Type-level declarations (virtual module, LhxCdn)
@@ -164,3 +163,8 @@ lhx-cli offline build --hybrid-type=prod
 ```
 
 See the lhx-kit docs for the manifest / prefetch / rollback contract.
+
+## Resources
+
+- 🐛 https://github.com/juwenzhang/lhx-kit/issues
+- 📖 https://juwenzhang.github.io/lhx-kit/

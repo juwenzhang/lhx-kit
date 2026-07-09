@@ -2,7 +2,7 @@
   "name": "cache-none",
   "title": "Cache: none",
   "description": "Skip cache scaffolding. No REDIS_URL, no docker service, no client singleton.",
-  "appliesTo": ["express-service", "koa-service", "fastify-service", "business-mono"],
+  "appliesTo": ["service", "business-mono"],
   "mutexGroup": "cache",
   "isDefault": false,
   "priority": 550

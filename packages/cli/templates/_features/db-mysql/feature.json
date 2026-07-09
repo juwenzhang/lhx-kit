@@ -2,11 +2,7 @@
   "name": "db-mysql",
   "title": "Database: MySQL",
   "description": "MySQL 8 via mysql2. Adds DATABASE_URL env, pool singleton, docker-compose service.",
-  "appliesTo": [
-    "express-service", "koa-service", "fastify-service",
-    "express-micro", "koa-micro", "fastify-micro",
-    "business-mono"
-  ],
+  "appliesTo": ["service", "micro", "business-mono"],
   "mutexGroup": "db",
   "isDefault": false,
   "priority": 500,
