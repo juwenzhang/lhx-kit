@@ -42,8 +42,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - master
 
 concurrency:
   group: release-${{ github.ref }}

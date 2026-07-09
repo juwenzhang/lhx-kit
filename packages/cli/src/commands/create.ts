@@ -1,5 +1,5 @@
-import {existsSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {existsSync, readdirSync} from 'node:fs';
+import {relative, resolve} from 'node:path';
 import {execa} from 'execa';
 import fse from 'fs-extra';
 import {bold} from 'kolorist';
@@ -391,19 +391,22 @@ export async function runCreateCommand(
     if (changed)
       info(`rewrote internal-scope deps (${internalPrefixes.join(', ')}) to workspace:* (via --link-workspace)`);
   } else {
-    // Per-package dynamic resolution: query `npm view` for each individual
-    // internal-scope dep so each one gets its actual latest version, not a
-    // single CLI-derived range. Cached across deps so the network cost is
-    // bounded; in linked-publish mode all kit packages share the same range.
-    const pkgPath = resolve(targetDir, 'package.json');
-    if (existsSync(pkgPath)) {
+    // Per-package dynamic resolution: walk EVERY package.json under
+    // targetDir (not just root) so monorepo templates (business-mono,
+    // lib-monorepo) also get per-dep `npm view` for their sub-packages.
+    // Cached across deps so the network cost stays bounded.
+    const pkgPaths = await walkPackageJsonPaths(targetDir);
+    for (const pkgPath of pkgPaths) {
       const original = (await fse.readJson(pkgPath)) as Record<string, unknown>;
       const rewritten = await resolveLhxKitDepsPerPackage(original, {
         strategy: versionStrategy,
         fallbackRange: lhxKitVersionRange,
         internalPrefixes,
         onResolvedDep: ({name, range, source}) => {
-          if (source === 'auto') info(`  ${name} → ${range}`);
+          if (source === 'auto') {
+            const rel = relative(targetDir, pkgPath);
+            info(`  ${name} → ${range}  (${rel === 'package.json' ? 'root' : rel})`);
+          }
         }
       });
       if (JSON.stringify(rewritten) !== JSON.stringify(original)) {
@@ -514,6 +517,29 @@ async function rewriteInternalDepsToWorkspace(targetDir: string, prefixes: reado
   }
   if (changed) await fse.writeJson(pkgPath, pkg, {spaces: 2});
   return changed;
+}
+
+/**
+ * Recursively find every `package.json` under `rootDir` (excluding
+ * `node_modules`). For monorepo templates this picks up sub-packages
+ * (`apps/*`, `packages/*`, ...) so per-dep version resolution covers
+ * every workspace member, not just the root.
+ */
+function walkPackageJsonPaths(rootDir: string): string[] {
+  const results: string[] = [];
+  const rootPkg = resolve(rootDir, 'package.json');
+  if (existsSync(rootPkg)) results.push(rootPkg);
+  try {
+    const entries = readdirSync(rootDir, {withFileTypes: true});
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+      results.push(...walkPackageJsonPaths(resolve(rootDir, entry.name)));
+    }
+  } catch {
+    // Permission errors, symlink loops, etc. — skip silently.
+  }
+  return results;
 }
 
 export const createCommand: CommandDescriptor = {

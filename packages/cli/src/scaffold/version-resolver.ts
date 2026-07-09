@@ -161,16 +161,15 @@ export async function resolveLhxKitDepsPerPackage(
     const updated: Record<string, string> = {...(original as Record<string, string>)};
     for (const depName of Object.keys(updated)) {
       if (!isInternalDep(depName, internalPrefixes)) continue;
-      if (strategy === 'local') {
-        updated[depName] = fallbackRange;
-        onResolvedDep?.({name: depName, range: fallbackRange, source: 'fallback'});
-        continue;
-      }
-      if (strategy !== 'auto') {
+      // Explicit literal version pin (e.g. `--lhx-version=^2.0.0`) — use as-is.
+      if (strategy !== 'auto' && strategy !== 'local') {
         updated[depName] = strategy;
         onResolvedDep?.({name: depName, range: strategy, source: 'explicit'});
         continue;
       }
+      // Always query npm registry for the real latest version. Works offline
+      // too — probe gracefully returns null and we fall back to the CLI-derived
+      // range, which is a safe fence for packages that haven't diverged yet.
       const published = await probeCached(depName);
       if (published === null) {
         updated[depName] = fallbackRange;
