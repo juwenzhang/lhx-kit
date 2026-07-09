@@ -1,5 +1,11 @@
 # @lhx-kit/cli
 
+## 1.2.3
+
+### Patch Changes
+
+- [#41](https://github.com/juwenzhang/lhx-kit/pull/41) [`51ef9d2`](https://github.com/juwenzhang/lhx-kit/commit/51ef9d25758556e81a1de6f2c6928b94134da441) Thanks [@juwenzhang](https://github.com/juwenzhang)! - 修复 `lhx-cli skills` 在 pnpm 严格隔离下无法解析 `@lhx-kit/skills` 的问题：改用 `createRequire` 从用户项目根解析模块路径，替代原来的裸 `import()` 调用。
+
 ## 1.2.2
 
 ### Patch Changes
