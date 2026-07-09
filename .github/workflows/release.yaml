@@ -91,13 +91,13 @@ jobs:
         # `E404 Not Found - PUT https://registry.npmjs.org/...` even
         # after the provenance statement is signed successfully.
         #
-        # Fix: upgrade npm to the latest version (>= 11.5.1) before the
-        # Changesets action runs. The provenance step itself works on
-        # older npm; only the final PUT step needs the new client.
+        # Fix: upgrade npm to the latest v11 (>= 11.5.1) which supports
+        # Node 20 + OIDC Trusted Publishing. Pinned to 11.x because npm
+        # 12.x requires Node >= 22.
         #
         # This must run AFTER setup-node so PATH is right, and BEFORE
         # the publish step so changesets/action picks up the new npm.
-        run: npm install -g npm@latest
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
