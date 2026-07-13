@@ -56,7 +56,7 @@ jobs:
 
     steps:
       - name: React (🔧)
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.reactions.createForIssueComment({
@@ -67,14 +67,14 @@ jobs:
             });
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.REPO_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup pnpm + Node
-        uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+        uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: pnpm
@@ -82,7 +82,7 @@ jobs:
 
       - name: Gather issue context + source tree snapshot
         id: context
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const issueNumber = context.payload.issue.number;
@@ -137,7 +137,7 @@ jobs:
 
       - name: Attempt 1 — ask GPT-4o for a patch plan
         id: ai1
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v2
         with:
           model: openai/gpt-4o
           system-prompt: |
@@ -193,7 +193,7 @@ jobs:
 
       - name: Apply patch (attempt 1)
         id: apply1
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           AI_OUTPUT: ${{ steps.ai1.outputs.response }}
         with:
@@ -275,7 +275,7 @@ jobs:
       - name: Attempt 2 — retry with error context
         id: ai2
         if: steps.apply1.outputs.success == 'true' && steps.check1.outputs.pass == 'false'
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v2
         with:
           model: openai/gpt-4o
           system-prompt: |
@@ -303,7 +303,7 @@ jobs:
       - name: Apply patch (attempt 2)
         id: apply2
         if: steps.check1.outputs.pass == 'false'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           AI_OUTPUT: ${{ steps.ai2.outputs.response }}
         with:
@@ -382,7 +382,7 @@ jobs:
 
       - name: Commit + push + open DRAFT PR
         if: steps.final.outputs.mode == 'pr'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
           TITLE: ${{ steps.final.outputs.title }}
@@ -477,7 +477,7 @@ jobs:
           echo "$DIFF_TEXT" > /tmp/degrade.diff
       - name: Comment degrade outcome
         if: steps.final.outputs.mode == 'degrade'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ASKER: ${{ steps.context.outputs.asker }}

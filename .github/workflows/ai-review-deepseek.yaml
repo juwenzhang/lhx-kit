@@ -44,14 +44,14 @@ jobs:
 
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
           fetch-depth: 2
 
       - name: Collect PR diff
         id: diff
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -93,7 +93,7 @@ jobs:
 
       - name: Call DeepSeek for reasoning-focused review
         id: ai
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v2
         with:
           # DeepSeek V3 0324 is the publicly available V3 checkpoint via
           # GitHub Models. Its sweet spot is "reason through edge cases
@@ -159,7 +159,7 @@ jobs:
           max-tokens: 2000
 
       - name: Post / update DeepSeek review comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           AI_RESPONSE: ${{ steps.ai.outputs.response }}
         with:
