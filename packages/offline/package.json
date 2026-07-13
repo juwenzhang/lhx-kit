@@ -52,17 +52,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
-    "fs-extra": "^11.2.0",
-    "zod": "^4.4.2"
+    "adm-zip": "^0.6.0",
+    "fs-extra": "^11.3.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@lhx-kit/tsconfig": "workspace:*",
     "@types/adm-zip": "^0.5.7",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.1.1",
     "tsup": "^8.3.5",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=18.18.0"
