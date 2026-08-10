@@ -23,22 +23,22 @@
     "@business-smoke/utils": "workspace:*",
     "@lhx-kit/renderer": "^1.0.0",
     "@lhx-kit/runtime": "^1.0.0",
-    "antd": "^5.22.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^6.28.0",
-    "zustand": "^5.0.2"
+    "antd": "^6.5.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@lhx-kit/config": "^1.0.0",
     "@lhx-kit/tsconfig": "^1.0.0",
     "@lhx-kit/vite-plugin": "^1.0.0",
-    "@types/node": "^20.11.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "msw": "^2.6.8",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.10"
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "msw": "^2.15.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
   }
 }
