@@ -50,7 +50,7 @@ export default defineConfig({
     nav: [
       {text: '🏠 首页', link: '/'},
       {text: '📖 指南', link: '/guide/getting-started'},
-      {text: '⚙️ CLI', link: '/cli/reference'},
+      {text: '⚙️ CLI', link: '/cli/scaffolding'},
       {text: '🧩 Runtime', link: '/runtime/overview'},
       {text: '🎨 Renderer', link: '/renderer/overview'},
       {text: '📦 Offline', link: '/offline/overview'},
