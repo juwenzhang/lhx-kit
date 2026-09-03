@@ -1,7 +1,4 @@
-export interface BridgeAdapter<TMethods extends Record<string, (...args: never[]) => unknown> = Record<string, never>> {
-  call<K extends keyof TMethods>(method: K, ...args: Parameters<TMethods[K]>): Promise<ReturnType<TMethods[K]>>;
-  available(): boolean;
-}
+import type {BridgeAdapter, WebViewBridgeOptions} from './types';
 
 export function createNoopBridge<
   TMethods extends Record<string, (...args: never[]) => unknown>
@@ -14,10 +11,6 @@ export function createNoopBridge<
       return false;
     }
   };
-}
-
-export interface WebViewBridgeOptions {
-  namespace?: string;
 }
 
 export function createWebViewBridge<TMethods extends Record<string, (...args: never[]) => unknown>>(

@@ -1,17 +1,5 @@
 import {UAParser} from 'ua-parser-js';
-
-export interface EnvInfo {
-  userAgent: string;
-  browser: {name?: string; version?: string};
-  os: {name?: string; version?: string};
-  device: {type?: string; vendor?: string; model?: string};
-  isMobile: boolean;
-  isIOS: boolean;
-  isAndroid: boolean;
-  isWeChat: boolean;
-  isInApp: boolean;
-  isDev: boolean;
-}
+import type {EnvInfo} from './types';
 
 export function detectEnv(userAgent?: string): EnvInfo {
   const ua = userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '');

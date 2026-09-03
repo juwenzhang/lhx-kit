@@ -1,19 +1,19 @@
 import {defineConfig} from 'tsdown';
 
 export default defineConfig({
-  entry: [
-    'src/index.ts',
-    'src/request.ts',
-    'src/env.ts',
-    'src/mobile.ts',
-    'src/logger.ts',
-    'src/bridge.ts',
-    'src/auth.ts',
-    'src/mock.ts',
-    'src/experiment.ts',
-    'src/theme.ts',
-    'src/cdn-loader.ts'
-  ],
+  entry: {
+    index: 'src/index.ts',
+    request: 'src/request/index.ts',
+    env: 'src/env/index.ts',
+    mobile: 'src/mobile/index.ts',
+    logger: 'src/logger/index.ts',
+    bridge: 'src/bridge/index.ts',
+    auth: 'src/auth/index.ts',
+    mock: 'src/mock/index.ts',
+    experiment: 'src/experiment/index.ts',
+    theme: 'src/theme/index.ts',
+    'cdn-loader': 'src/cdn-loader/index.ts'
+  },
   format: ['esm'],
   target: 'es2022',
   dts: true,
