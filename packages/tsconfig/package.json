@@ -46,10 +46,6 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "scripts": {
-    "typecheck": "echo 'tsconfig package has no TS sources; skip'",
-    "build": "echo 'tsconfig package ships JSON only; nothing to build'"
-  },
   "engines": {
     "node": ">=18.18.0"
   }
