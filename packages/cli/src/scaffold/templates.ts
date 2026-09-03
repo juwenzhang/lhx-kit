@@ -107,8 +107,21 @@ function renderString(input: string, variables: Record<string, unknown>): string
   });
 }
 
+/**
+ * Render a *file path* from a template stub path.
+ *
+ * Besides the `<%= key %>` tokens used in file bodies, paths may carry a
+ * Windows-safe `__key__` token (Hygen-style). This is required for template
+ * filenames like `__Name__About.tsx.template`: the historical `<%= Name %>`
+ * spelling contains `<`/`>` which NTFS forbids in filenames, so cloning the
+ * repository on Windows failed at checkout. `__key__` is substituted here and
+ * never leaks into file contents.
+ */
 function renderPath(input: string, variables: Record<string, unknown>): string {
-  const rendered = renderString(input, variables);
+  const rendered = renderString(input, variables).replace(/__([a-zA-Z0-9_]+)__/g, (_, key: string) => {
+    const value = variables[key];
+    return value === undefined ? '' : String(value);
+  });
   return rendered.endsWith('.template') ? rendered.slice(0, -'.template'.length) : rendered;
 }
 
