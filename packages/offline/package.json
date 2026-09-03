@@ -60,9 +60,9 @@
     "@lhx-kit/tsconfig": "workspace:*",
     "@types/adm-zip": "^0.5.8",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.4.0",
     "tsdown": "^0.22.14",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=18.18.0"

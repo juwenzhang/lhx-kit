@@ -106,11 +106,11 @@
   },
   "devDependencies": {
     "@lhx-kit/tsconfig": "workspace:*",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.4.0",
     "@types/ua-parser-js": "^0.7.39",
     "msw": "^2.15.0",
     "tsdown": "^0.22.14",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=18.18.0"
