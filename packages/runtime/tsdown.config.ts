@@ -1,4 +1,4 @@
-import {defineConfig} from 'tsup';
+import {defineConfig} from 'tsdown';
 
 export default defineConfig({
   entry: [
@@ -19,7 +19,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  splitting: false,
   outDir: 'dist',
-  external: ['msw']
+  outExtensions: () => ({js: '.js', dts: '.d.ts'})
 });

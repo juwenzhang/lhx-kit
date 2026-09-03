@@ -87,14 +87,14 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "axios": "^1.16.0",
-    "ua-parser-js": "^2.0.9"
+    "axios": "^1.20.0",
+    "ua-parser-js": "^2.0.10"
   },
   "peerDependencies": {
     "msw": ">=2"
@@ -106,10 +106,10 @@
   },
   "devDependencies": {
     "@lhx-kit/tsconfig": "workspace:*",
-    "@types/node": "^25.6.0",
+    "@types/node": "^26.4.1",
     "@types/ua-parser-js": "^0.7.39",
-    "msw": "^2.14.2",
-    "tsup": "^8.3.5",
+    "msw": "^2.15.0",
+    "tsdown": "^0.22.14",
     "typescript": "^6.0.3"
   },
   "engines": {

@@ -1,4 +1,4 @@
-import {defineConfig} from 'tsup';
+import {defineConfig} from 'tsdown';
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/vue.ts', 'src/react.tsx', 'src/schema-zod.ts'],
@@ -7,7 +7,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  splitting: true,
   outDir: 'dist',
-  external: ['vue', 'react', 'react-dom']
+  outExtensions: () => ({js: '.js', dts: '.d.ts'})
 });

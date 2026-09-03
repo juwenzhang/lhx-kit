@@ -59,13 +59,13 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "zod": "^4.4.2"
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -81,11 +81,11 @@
   },
   "devDependencies": {
     "@lhx-kit/tsconfig": "workspace:*",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
-    "tsup": "^8.3.5",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
+    "tsdown": "^0.22.14",
     "typescript": "^6.0.3",
-    "vue": "^3.5.13"
+    "vue": "^3.5.42"
   },
   "engines": {
     "node": ">=18.18.0"

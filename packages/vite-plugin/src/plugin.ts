@@ -615,7 +615,7 @@ function computeChunkOwners(
       visited.add(current);
 
       const asset = bundle[current] as {type?: string; imports?: string[]; dynamicImports?: string[]} | undefined;
-      if (!asset || asset.type !== 'chunk') continue;
+      if (asset?.type !== 'chunk') continue;
       const set = owners.get(current) ?? new Set<string>();
       set.add(pageName);
       owners.set(current, set);

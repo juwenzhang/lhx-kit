@@ -79,21 +79,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           # Needed for npm publish with provenance
           registry-url: https://registry.npmjs.org
 
       - name: Upgrade npm to >= 11.5.1 (required for Trusted Publishing)
-        # Node 20 ships npm 10.x by default, which DOES NOT support the
+        # Node 22 ships npm 10.x by default, which DOES NOT support the
         # OIDC token-exchange endpoint /-/npm/v1/oidc/token/exchange used
         # by Trusted Publishing. Publishing will fail with a misleading
         # `E404 Not Found - PUT https://registry.npmjs.org/...` even
         # after the provenance statement is signed successfully.
         #
         # Fix: upgrade npm to the latest v11 (>= 11.5.1) which supports
-        # Node 20 + OIDC Trusted Publishing. Pinned to 11.x because npm
-        # 12.x requires Node >= 22.
+        # OIDC Trusted Publishing. Pinned to 11.x because npm 12.x
+        # requires Node >= 22 and may change behaviour; npm 11 is the
+        # battle-tested baseline for trusted publishing.
         #
         # This must run AFTER setup-node so PATH is right, and BEFORE
         # the publish step so changesets/action picks up the new npm.

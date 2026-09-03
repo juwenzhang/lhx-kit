@@ -52,7 +52,7 @@ permissions:
 env:
   # pnpm version is read from root package.json "packageManager"
   # (do NOT also pass `version:` to pnpm/action-setup — it errors out).
-  NODE_VERSION: 20
+  NODE_VERSION: 22
 
 jobs:
   # ──────────────────────────────────────────────────────
@@ -125,9 +125,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # examples/* 的 engines.node 要求 >= 20，所以这里只测 20 / 22。
-        # packages/* 本身兼容更老的 Node，如需验证可以单独加一个 job。
-        node: [20, 22]
+        # examples/* 的 engines.node 要求 >= 20；tsdown 构建需要 Node >= 22.18。
+        # packages/* 运行时兼容更老的 Node，如需验证可以单独加一个 job。
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
 

@@ -1,4 +1,4 @@
-import {defineConfig} from 'tsup';
+import {defineConfig} from 'tsdown';
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/bin.ts'],
@@ -7,9 +7,8 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  splitting: false,
   outDir: 'dist',
   shims: true,
   banner: {js: '#!/usr/bin/env node'},
-  external: ['@lhx-kit/config', '@lhx-kit/offline']
+  outExtensions: () => ({js: '.js', dts: '.d.ts'})
 });

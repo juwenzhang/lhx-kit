@@ -46,22 +46,22 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
-    "fs-extra": "^11.2.0",
-    "zod": "^4.4.2"
+    "adm-zip": "^0.6.0",
+    "fs-extra": "^11.4.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@lhx-kit/tsconfig": "workspace:*",
-    "@types/adm-zip": "^0.5.7",
+    "@types/adm-zip": "^0.5.8",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^25.6.0",
-    "tsup": "^8.3.5",
+    "@types/node": "^26.4.1",
+    "tsdown": "^0.22.14",
     "typescript": "^6.0.3"
   },
   "engines": {
