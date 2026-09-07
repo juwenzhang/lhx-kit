@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Checkout PR (merge commit)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Use the PR merge ref so the reviewer sees exactly what
           # would land on master. fetch-depth:2 gives us HEAD~1 for diff.
@@ -51,7 +51,7 @@ jobs:
 
       - name: Collect PR diff (<= 150 KB)
         id: diff
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -106,7 +106,7 @@ jobs:
 
       - name: Call GPT-4o for review
         id: ai
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v3
         with:
           # gpt-4o (not mini) — this is a review task, model quality
           # matters more than latency. Costs nothing on public repos.
@@ -175,7 +175,7 @@ jobs:
           max-tokens: 2000
 
       - name: Post / update review comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           AI_RESPONSE: ${{ steps.ai.outputs.response }}
         with:

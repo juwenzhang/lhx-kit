@@ -46,14 +46,14 @@ jobs:
 
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || github.event.pull_request.head.sha }}
           fetch-depth: 2
 
       - name: Collect PR diff + repo context
         id: diff
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -107,7 +107,7 @@ jobs:
 
       - name: Call Llama for cross-file review
         id: ai
-        uses: actions/ai-inference@v1
+        uses: actions/ai-inference@v3
         with:
           # Llama 3.3 70B is Meta's open-weights flagship on GitHub Models.
           # It's our second voice — different training data & RLHF from GPT,
@@ -171,7 +171,7 @@ jobs:
           max-tokens: 1800
 
       - name: Post / update Llama review comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           AI_RESPONSE: ${{ steps.ai.outputs.response }}
         with:
