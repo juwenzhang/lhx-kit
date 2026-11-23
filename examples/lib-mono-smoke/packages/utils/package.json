@@ -27,6 +27,6 @@
     "@lib-mono-smoke/core": "workspace:*"
   },
   "devDependencies": {
-    "tsup": "^8.3.0"
+    "tsup": "^9.0.0"
   }
 }
